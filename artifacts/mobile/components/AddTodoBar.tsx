@@ -1,5 +1,5 @@
 import * as Haptics from "expo-haptics";
-import React, { useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   Animated,
   Platform,
@@ -21,8 +21,9 @@ export function AddTodoBar({ onAdd }: Props) {
   const [listening, setListening] = useState(false);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const pulseLoop = useRef<Animated.CompositeAnimation | null>(null);
+  const recRef = useRef<any>(null);
 
-  const startPulse = () => {
+  const startPulse = useCallback(() => {
     pulseLoop.current = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.12, duration: 600, useNativeDriver: true }),
@@ -30,51 +31,24 @@ export function AddTodoBar({ onAdd }: Props) {
       ])
     );
     pulseLoop.current.start();
-  };
+  }, [pulseAnim]);
 
-  const stopPulse = () => {
+  const stopPulse = useCallback(() => {
     pulseLoop.current?.stop();
-    Animated.timing(pulseAnim, { toValue: 1, duration: 100, useNativeDriver: true }).start();
-  };
+    pulseAnim.setValue(1);
+  }, [pulseAnim]);
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     if (!text.trim()) return;
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
     onAdd(text);
     setText("");
-  };
+  }, [text, onAdd]);
 
-  const handleMic = () => {
-    if (Platform.OS === "web") {
-      const SpeechRecognition =
-        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        alert("Tarayıcınız ses tanımayı desteklemiyor.");
-        return;
-      }
-      if (listening) {
-        setListening(false);
-        stopPulse();
-        return;
-      }
-      const rec = new SpeechRecognition();
-      rec.lang = "tr-TR";
-      rec.continuous = false;
-      rec.interimResults = false;
-      rec.onresult = (e: any) => {
-        const transcript = e.results[0][0].transcript;
-        setText(transcript);
-        setListening(false);
-        stopPulse();
-      };
-      rec.onerror = () => { setListening(false); stopPulse(); };
-      rec.onend = () => { setListening(false); stopPulse(); };
-      rec.start();
-      setListening(true);
-      startPulse();
-    } else {
+  const handleMic = useCallback(() => {
+    if (Platform.OS !== "web") {
       if (listening) {
         setListening(false);
         stopPulse();
@@ -86,8 +60,48 @@ export function AddTodoBar({ onAdd }: Props) {
           stopPulse();
         }, 3000);
       }
+      return;
     }
-  };
+
+    try {
+      const SpeechRecognition =
+        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+      if (!SpeechRecognition) {
+        setListening(false);
+        return;
+      }
+
+      if (listening) {
+        try { recRef.current?.stop(); } catch {}
+        setListening(false);
+        stopPulse();
+        return;
+      }
+
+      const rec = new SpeechRecognition();
+      rec.lang = "tr-TR";
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.onresult = (e: any) => {
+        try {
+          const transcript = e.results[0][0].transcript;
+          setText(transcript);
+        } catch {}
+        setListening(false);
+        stopPulse();
+      };
+      rec.onerror = () => { setListening(false); stopPulse(); };
+      rec.onend = () => { setListening(false); stopPulse(); };
+      recRef.current = rec;
+      rec.start();
+      setListening(true);
+      startPulse();
+    } catch {
+      setListening(false);
+      stopPulse();
+    }
+  }, [listening, startPulse, stopPulse]);
 
   return (
     <View
@@ -96,7 +110,6 @@ export function AddTodoBar({ onAdd }: Props) {
         {
           backgroundColor: colors.white,
           borderColor: colors.border,
-          shadowColor: "#000",
         },
       ]}
     >
@@ -153,10 +166,6 @@ const styles = StyleSheet.create({
     paddingRight: 8,
     borderWidth: 1,
     gap: 8,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
-    elevation: 4,
   },
   input: {
     flex: 1,

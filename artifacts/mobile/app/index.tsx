@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import {
   FlatList,
   Platform,
@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AddTodoBar } from "@/components/AddTodoBar";
 import { ProgressBar } from "@/components/ProgressBar";
 import { TodoItem } from "@/components/TodoItem";
-import { useTodos } from "@/context/TodoContext";
+import { Todo, useTodos } from "@/context/TodoContext";
 import { useColors } from "@/hooks/useColors";
 
 export default function HomeScreen() {
@@ -23,13 +23,58 @@ export default function HomeScreen() {
   const total = useMemo(() => todos.length, [todos]);
   const progress = total === 0 ? 0 : (done / total) * 100;
 
+  const handleToggle = useCallback((id: string) => toggleTodo(id), [toggleTodo]);
+  const handleDelete = useCallback((id: string) => deleteTodo(id), [deleteTodo]);
+
   const topPad = Platform.OS === "web" ? 80 : insets.top + 16;
+
+  const renderItem = useCallback(
+    ({ item }: { item: Todo }) => (
+      <TodoItem
+        todo={item}
+        onToggle={() => handleToggle(item.id)}
+        onDelete={() => handleDelete(item.id)}
+      />
+    ),
+    [handleToggle, handleDelete]
+  );
+
+  const keyExtractor = useCallback((item: Todo) => item.id, []);
+
+  const ListHeader = useMemo(
+    () => (
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: colors.darkText }]}>
+          Yapılacaklar
+        </Text>
+        <Text style={[styles.subtitle, { color: colors.lightText }]}>
+          {done} / {total} tamamlandı
+        </Text>
+        <ProgressBar progress={progress} />
+      </View>
+    ),
+    [done, total, progress, colors]
+  );
+
+  const ListEmpty = useMemo(
+    () => (
+      <View style={styles.emptyContainer}>
+        <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+          Henüz görev yok.
+        </Text>
+        <Text style={[styles.emptySubText, { color: colors.mutedForeground }]}>
+          Aşağıdan bir şeyler ekle!
+        </Text>
+      </View>
+    ),
+    [colors]
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.cream }]}>
       <FlatList
         data={todos}
-        keyExtractor={(item) => item.id}
+        keyExtractor={keyExtractor}
         contentContainerStyle={[
           styles.list,
           {
@@ -37,36 +82,13 @@ export default function HomeScreen() {
             paddingBottom: Platform.OS === "web" ? 140 : insets.bottom + 120,
           },
         ]}
-        scrollEnabled={!!todos.length || true}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          <View style={styles.header}>
-            <Text style={[styles.title, { color: colors.darkText }]}>
-              Yapılacaklar
-            </Text>
-            <Text style={[styles.subtitle, { color: colors.lightText }]}>
-              {done} / {total} tamamlandı
-            </Text>
-            <ProgressBar progress={progress} />
-          </View>
-        }
-        renderItem={({ item }) => (
-          <TodoItem
-            todo={item}
-            onToggle={() => toggleTodo(item.id)}
-            onDelete={() => deleteTodo(item.id)}
-          />
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-              Henüz görev yok.
-            </Text>
-            <Text style={[styles.emptySubText, { color: colors.mutedForeground }]}>
-              Aşağıdan bir şeyler ekle!
-            </Text>
-          </View>
-        }
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={15}
+        windowSize={10}
+        ListHeaderComponent={ListHeader}
+        renderItem={renderItem}
+        ListEmptyComponent={ListEmpty}
       />
 
       <View

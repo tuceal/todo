@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { Animated, StyleSheet, View } from "react-native";
+import React from "react";
+import { StyleSheet, View } from "react-native";
 import { useColors } from "@/hooks/useColors";
 
 interface Props {
@@ -8,27 +8,15 @@ interface Props {
 
 export function ProgressBar({ progress }: Props) {
   const colors = useColors();
-  const widthAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(widthAnim, {
-      toValue: progress,
-      duration: 500,
-      useNativeDriver: false,
-    }).start();
-  }, [progress]);
+  const clampedWidth = `${Math.max(0, Math.min(100, progress))}%` as const;
 
   return (
     <View style={[styles.track, { backgroundColor: colors.muted }]}>
-      <Animated.View
+      <View
         style={[
           styles.fill,
           {
-            width: widthAnim.interpolate({
-              inputRange: [0, 100],
-              outputRange: ["0%", "100%"],
-              extrapolate: "clamp",
-            }),
+            width: clampedWidth,
             backgroundColor: colors.gold,
           },
         ]}

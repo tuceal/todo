@@ -1,12 +1,11 @@
 import * as Haptics from "expo-haptics";
-import React, { useRef } from "react";
+import React, { memo, useRef } from "react";
 import {
   Animated,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
@@ -18,7 +17,7 @@ interface Props {
   onDelete: () => void;
 }
 
-export function TodoItem({ todo, onToggle, onDelete }: Props) {
+function TodoItemInner({ todo, onToggle, onDelete }: Props) {
   const colors = useColors();
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
@@ -28,8 +27,8 @@ export function TodoItem({ todo, onToggle, onDelete }: Props) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     Animated.sequence([
-      Animated.timing(scaleAnim, { toValue: 0.92, duration: 80, useNativeDriver: true }),
-      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }),
+      Animated.timing(scaleAnim, { toValue: 0.93, duration: 70, useNativeDriver: true }),
+      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, bounciness: 4 }),
     ]).start();
     onToggle();
   };
@@ -38,7 +37,7 @@ export function TodoItem({ todo, onToggle, onDelete }: Props) {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
-    Animated.timing(opacityAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+    Animated.timing(opacityAnim, { toValue: 0, duration: 180, useNativeDriver: true }).start(() => {
       onDelete();
     });
   };
@@ -56,7 +55,7 @@ export function TodoItem({ todo, onToggle, onDelete }: Props) {
         style={[
           styles.checkBtn,
           {
-            borderColor: todo.done ? colors.gold : colors.gold,
+            borderColor: colors.gold,
             backgroundColor: todo.done ? colors.gold : "transparent",
           },
         ]}
@@ -85,6 +84,8 @@ export function TodoItem({ todo, onToggle, onDelete }: Props) {
     </Animated.View>
   );
 }
+
+export const TodoItem = memo(TodoItemInner);
 
 const styles = StyleSheet.create({
   container: {
