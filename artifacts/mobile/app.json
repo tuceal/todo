@@ -18,7 +18,14 @@
     },
     "android": {},
     "web": {
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./assets/images/icon.png",
+      "output": "static",
+      "bundler": "metro",
+      "name": "Yapılacaklar",
+      "shortName": "Yapılacaklar",
+      "themeColor": "#c8a96e",
+      "backgroundColor": "#f5f0e8",
+      "description": "Kişisel yapılacaklar listesi"
     },
     "plugins": [
       "expo-router",
