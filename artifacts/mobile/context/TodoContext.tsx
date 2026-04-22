@@ -6,61 +6,87 @@ export interface Todo {
   text: string;
   done: boolean;
   createdAt: number;
+  category?: string;
 }
 
 interface TodoContextValue {
   todos: Todo[];
+  categories: string[];
+  activeFilter: string | null;
   addTodo: (text: string) => void;
   toggleTodo: (id: string) => void;
   deleteTodo: (id: string) => void;
   editTodo: (id: string, text: string) => void;
+  addCategory: (name: string) => void;
+  deleteCategory: (name: string) => void;
+  setActiveFilter: (cat: string | null) => void;
 }
 
 const TodoContext = createContext<TodoContextValue | null>(null);
 
-const STORAGE_KEY = "@yapilacaklar_todos";
+const TODOS_KEY = "@yapilacaklar_todos_v2";
+const CATS_KEY = "@yapilacaklar_categories";
 
 const initialTodos: Todo[] = [
   { id: "1", text: "Yapılacaklar uygulamasını keşfet", done: true, createdAt: Date.now() - 200000 },
   { id: "2", text: "İlk görevini ekle", done: false, createdAt: Date.now() - 100000 },
 ];
 
+function genId() {
+  return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+}
+
 export function TodoProvider({ children }: { children: React.ReactNode }) {
   const [todos, setTodos] = useState<Todo[]>(initialTodos);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw) as Todo[];
-          setTodos(parsed);
-        } catch {}
+    Promise.all([
+      AsyncStorage.getItem(TODOS_KEY),
+      AsyncStorage.getItem(CATS_KEY),
+    ]).then(([rawTodos, rawCats]) => {
+      if (rawTodos) {
+        try { setTodos(JSON.parse(rawTodos)); } catch {}
+      }
+      if (rawCats) {
+        try { setCategories(JSON.parse(rawCats)); } catch {}
       }
       setLoaded(true);
     });
   }, []);
 
   useEffect(() => {
-    if (loaded) {
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
-    }
+    if (!loaded) return;
+    AsyncStorage.setItem(TODOS_KEY, JSON.stringify(todos));
   }, [todos, loaded]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    AsyncStorage.setItem(CATS_KEY, JSON.stringify(categories));
+  }, [categories, loaded]);
 
   const addTodo = (text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
-    const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-    setTodos((prev) => [{ id, text: trimmed, done: false, createdAt: Date.now() }, ...prev]);
+    setTodos((prev) => [
+      {
+        id: genId(),
+        text: trimmed,
+        done: false,
+        createdAt: Date.now(),
+        category: activeFilter ?? undefined,
+      },
+      ...prev,
+    ]);
   };
 
-  const toggleTodo = (id: string) => {
+  const toggleTodo = (id: string) =>
     setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
-  };
 
-  const deleteTodo = (id: string) => {
+  const deleteTodo = (id: string) =>
     setTodos((prev) => prev.filter((t) => t.id !== id));
-  };
 
   const editTodo = (id: string, text: string) => {
     const trimmed = text.trim();
@@ -68,8 +94,33 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
     setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, text: trimmed } : t)));
   };
 
+  const addCategory = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed || categories.includes(trimmed)) return;
+    setCategories((prev) => [...prev, trimmed]);
+  };
+
+  const deleteCategory = (name: string) => {
+    setCategories((prev) => prev.filter((c) => c !== name));
+    setTodos((prev) => prev.map((t) => t.category === name ? { ...t, category: undefined } : t));
+    if (activeFilter === name) setActiveFilter(null);
+  };
+
   return (
-    <TodoContext.Provider value={{ todos, addTodo, toggleTodo, deleteTodo, editTodo }}>
+    <TodoContext.Provider
+      value={{
+        todos,
+        categories,
+        activeFilter,
+        addTodo,
+        toggleTodo,
+        deleteTodo,
+        editTodo,
+        addCategory,
+        deleteCategory,
+        setActiveFilter,
+      }}
+    >
       {children}
     </TodoContext.Provider>
   );

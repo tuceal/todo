@@ -15,6 +15,26 @@ interface Props {
   onAdd: (text: string) => void;
 }
 
+function playSoftBeep(type: "start" | "stop") {
+  if (Platform.OS !== "web") return;
+  try {
+    const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.value = type === "start" ? 523 : 392;
+    gain.gain.setValueAtTime(0.04, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.07);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.07);
+    setTimeout(() => { try { ctx.close(); } catch {} }, 500);
+  } catch {}
+}
+
 export function AddTodoBar({ onAdd }: Props) {
   const colors = useColors();
   const [text, setText] = useState("");
@@ -26,8 +46,8 @@ export function AddTodoBar({ onAdd }: Props) {
   const startPulse = useCallback(() => {
     pulseLoop.current = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.12, duration: 600, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1.1, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
       ])
     );
     pulseLoop.current.start();
@@ -41,7 +61,7 @@ export function AddTodoBar({ onAdd }: Props) {
   const handleAdd = useCallback(() => {
     if (!text.trim()) return;
     if (Platform.OS !== "web") {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     onAdd(text);
     setText("");
@@ -50,9 +70,11 @@ export function AddTodoBar({ onAdd }: Props) {
   const handleMic = useCallback(() => {
     if (Platform.OS !== "web") {
       if (listening) {
+        Haptics.selectionAsync();
         setListening(false);
         stopPulse();
       } else {
+        Haptics.selectionAsync();
         setListening(true);
         startPulse();
         setTimeout(() => {
@@ -66,14 +88,11 @@ export function AddTodoBar({ onAdd }: Props) {
     try {
       const SpeechRecognition =
         (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-      if (!SpeechRecognition) {
-        setListening(false);
-        return;
-      }
+      if (!SpeechRecognition) return;
 
       if (listening) {
         try { recRef.current?.stop(); } catch {}
+        playSoftBeep("stop");
         setListening(false);
         stopPulse();
         return;
@@ -84,16 +103,15 @@ export function AddTodoBar({ onAdd }: Props) {
       rec.continuous = false;
       rec.interimResults = false;
       rec.onresult = (e: any) => {
-        try {
-          const transcript = e.results[0][0].transcript;
-          setText(transcript);
-        } catch {}
+        try { setText(e.results[0][0].transcript); } catch {}
+        playSoftBeep("stop");
         setListening(false);
         stopPulse();
       };
       rec.onerror = () => { setListening(false); stopPulse(); };
       rec.onend = () => { setListening(false); stopPulse(); };
       recRef.current = rec;
+      playSoftBeep("start");
       rec.start();
       setListening(true);
       startPulse();
@@ -107,10 +125,7 @@ export function AddTodoBar({ onAdd }: Props) {
     <View
       style={[
         styles.container,
-        {
-          backgroundColor: colors.white,
-          borderColor: colors.border,
-        },
+        { backgroundColor: colors.white, borderColor: colors.border },
       ]}
     >
       <TextInput
@@ -120,10 +135,7 @@ export function AddTodoBar({ onAdd }: Props) {
         placeholderTextColor={colors.mutedForeground}
         onSubmitEditing={handleAdd}
         returnKeyType="done"
-        style={[
-          styles.input,
-          { color: colors.darkText, fontFamily: "Lato_400Regular" },
-        ]}
+        style={[styles.input, { color: colors.darkText, fontFamily: "Lato_400Regular" }]}
       />
 
       <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
@@ -131,26 +143,20 @@ export function AddTodoBar({ onAdd }: Props) {
           onPress={handleMic}
           activeOpacity={0.8}
           style={[
-            styles.micBtn,
-            {
-              backgroundColor: listening ? colors.micActive : colors.secondary,
-            },
+            styles.iconBtn,
+            { backgroundColor: listening ? colors.micActive : colors.secondary },
           ]}
         >
-          <Feather
-            name="mic"
-            size={16}
-            color={listening ? "#ffffff" : colors.gold}
-          />
+          <Feather name="mic" size={16} color={listening ? "#fff" : colors.gold} />
         </TouchableOpacity>
       </Animated.View>
 
       <TouchableOpacity
         onPress={handleAdd}
         activeOpacity={0.8}
-        style={[styles.addBtn, { backgroundColor: colors.darkText }]}
+        style={[styles.iconBtn, { backgroundColor: colors.darkText }]}
       >
-        <Feather name="plus" size={20} color="#ffffff" />
+        <Feather name="plus" size={20} color="#fff" />
       </TouchableOpacity>
     </View>
   );
@@ -174,14 +180,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     paddingVertical: Platform.OS === "ios" ? 6 : 4,
   },
-  micBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addBtn: {
+  iconBtn: {
     width: 40,
     height: 40,
     borderRadius: 10,

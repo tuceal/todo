@@ -9,6 +9,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AddTodoBar } from "@/components/AddTodoBar";
+import { CategoryBar } from "@/components/CategoryBar";
 import { ProgressBar } from "@/components/ProgressBar";
 import { TodoItem } from "@/components/TodoItem";
 import { Todo, useTodos } from "@/context/TodoContext";
@@ -17,10 +18,15 @@ import { useColors } from "@/hooks/useColors";
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { todos, addTodo, toggleTodo, deleteTodo } = useTodos();
+  const { todos, activeFilter, addTodo, toggleTodo, deleteTodo } = useTodos();
 
-  const done = useMemo(() => todos.filter((t) => t.done).length, [todos]);
-  const total = useMemo(() => todos.length, [todos]);
+  const filtered = useMemo(
+    () => (activeFilter ? todos.filter((t) => t.category === activeFilter) : todos),
+    [todos, activeFilter]
+  );
+
+  const done = useMemo(() => filtered.filter((t) => t.done).length, [filtered]);
+  const total = useMemo(() => filtered.length, [filtered]);
   const progress = total === 0 ? 0 : (done / total) * 100;
 
   const handleToggle = useCallback((id: string) => toggleTodo(id), [toggleTodo]);
@@ -44,16 +50,16 @@ export default function HomeScreen() {
   const ListHeader = useMemo(
     () => (
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.darkText }]}>
-          Yapılacaklar
-        </Text>
+        <Text style={[styles.title, { color: colors.darkText }]}>Yapılacaklar</Text>
         <Text style={[styles.subtitle, { color: colors.lightText }]}>
           {done} / {total} tamamlandı
+          {activeFilter ? `  ·  ${activeFilter}` : ""}
         </Text>
         <ProgressBar progress={progress} />
+        <CategoryBar />
       </View>
     ),
-    [done, total, progress, colors]
+    [done, total, progress, activeFilter, colors]
   );
 
   const ListEmpty = useMemo(
@@ -73,7 +79,7 @@ export default function HomeScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.cream }]}>
       <FlatList
-        data={todos}
+        data={filtered}
         keyExtractor={keyExtractor}
         contentContainerStyle={[
           styles.list,
@@ -95,9 +101,7 @@ export default function HomeScreen() {
         style={[
           styles.inputContainer,
           {
-            paddingBottom: Platform.OS === "web"
-              ? 34
-              : Math.max(insets.bottom, 16),
+            paddingBottom: Platform.OS === "web" ? 34 : Math.max(insets.bottom, 16),
             paddingHorizontal: 20,
             paddingTop: 12,
             backgroundColor: colors.cream,
@@ -111,15 +115,9 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  list: {
-    paddingHorizontal: 24,
-  },
-  header: {
-    marginBottom: 8,
-  },
+  container: { flex: 1 },
+  list: { paddingHorizontal: 24 },
+  header: { marginBottom: 8 },
   title: {
     fontSize: 38,
     fontFamily: "PlayfairDisplay_700Bold",
