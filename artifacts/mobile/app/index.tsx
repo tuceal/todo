@@ -12,27 +12,50 @@ import { AddTodoBar } from "@/components/AddTodoBar";
 import { CategoryBar } from "@/components/CategoryBar";
 import { ProgressBar } from "@/components/ProgressBar";
 import { TodoItem } from "@/components/TodoItem";
-import { Todo, useTodos } from "@/context/TodoContext";
+import { Todo, Priority, useTodos } from "@/context/TodoContext";
 import { useColors } from "@/hooks/useColors";
+
+const PRIORITY_WEIGHT: Record<string, number> = { high: 3, medium: 2, low: 1 };
 
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { todos, activeFilter, addTodo, toggleTodo, deleteTodo, editTodo, setDueDate } = useTodos();
+  const {
+    todos,
+    activeFilter,
+    addTodo,
+    toggleTodo,
+    deleteTodo,
+    editTodo,
+    setDueDate,
+    setPriority,
+  } = useTodos();
 
   const filtered = useMemo(
     () => (activeFilter ? todos.filter((t) => t.category === activeFilter) : todos),
     [todos, activeFilter]
   );
 
+  const sorted = useMemo(
+    () =>
+      [...filtered].sort((a, b) => {
+        if (a.done !== b.done) return a.done ? 1 : -1;
+        const pa = PRIORITY_WEIGHT[a.priority ?? ""] ?? 0;
+        const pb = PRIORITY_WEIGHT[b.priority ?? ""] ?? 0;
+        return pb - pa;
+      }),
+    [filtered]
+  );
+
   const done = useMemo(() => filtered.filter((t) => t.done).length, [filtered]);
-  const total = useMemo(() => filtered.length, [filtered]);
+  const total = filtered.length;
   const progress = total === 0 ? 0 : (done / total) * 100;
 
   const handleToggle = useCallback((id: string) => toggleTodo(id), [toggleTodo]);
   const handleDelete = useCallback((id: string) => deleteTodo(id), [deleteTodo]);
   const handleEdit = useCallback((id: string, text: string) => editTodo(id, text), [editTodo]);
   const handleSetDueDate = useCallback((id: string, date: string | undefined) => setDueDate(id, date), [setDueDate]);
+  const handleSetPriority = useCallback((id: string, p: Priority | undefined) => setPriority(id, p), [setPriority]);
 
   const topPad = Platform.OS === "web" ? 80 : insets.top + 16;
 
@@ -44,9 +67,10 @@ export default function HomeScreen() {
         onDelete={() => handleDelete(item.id)}
         onEdit={(text) => handleEdit(item.id, text)}
         onSetDueDate={(date) => handleSetDueDate(item.id, date)}
+        onSetPriority={(p) => handleSetPriority(item.id, p)}
       />
     ),
-    [handleToggle, handleDelete, handleEdit, handleSetDueDate]
+    [handleToggle, handleDelete, handleEdit, handleSetDueDate, handleSetPriority]
   );
 
   const keyExtractor = useCallback((item: Todo) => item.id, []);
@@ -83,7 +107,7 @@ export default function HomeScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.cream }]}>
       <FlatList
-        data={filtered}
+        data={sorted}
         keyExtractor={keyExtractor}
         contentContainerStyle={[
           styles.list,

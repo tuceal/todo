@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
+export type Priority = "high" | "medium" | "low";
+
 export interface Todo {
   id: string;
   text: string;
@@ -8,6 +10,7 @@ export interface Todo {
   createdAt: number;
   category?: string;
   dueDate?: string;
+  priority?: Priority;
 }
 
 interface TodoContextValue {
@@ -19,6 +22,7 @@ interface TodoContextValue {
   deleteTodo: (id: string) => void;
   editTodo: (id: string, text: string) => void;
   setDueDate: (id: string, date: string | undefined) => void;
+  setPriority: (id: string, priority: Priority | undefined) => void;
   addCategory: (name: string) => void;
   deleteCategory: (name: string) => void;
   setActiveFilter: (cat: string | null) => void;
@@ -99,6 +103,9 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
   const setDueDate = (id: string, date: string | undefined) =>
     setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, dueDate: date } : t)));
 
+  const setPriority = (id: string, priority: Priority | undefined) =>
+    setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, priority } : t)));
+
   const addCategory = (name: string) => {
     const trimmed = name.trim();
     if (!trimmed || categories.includes(trimmed)) return;
@@ -122,6 +129,7 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
         deleteTodo,
         editTodo,
         setDueDate,
+        setPriority,
         addCategory,
         deleteCategory,
         setActiveFilter,

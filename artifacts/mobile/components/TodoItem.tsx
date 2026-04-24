@@ -12,11 +12,24 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
-import { Todo } from "@/context/TodoContext";
+import { Todo, Priority } from "@/context/TodoContext";
 import { DueDatePicker, formatDateTR, dueDateStatus } from "@/components/DueDatePicker";
 
 const SWIPE_THRESHOLD = 90;
 const DELETE_THRESHOLD = 130;
+
+const PRIORITY_COLORS: Record<Priority, string> = {
+  high: "#e53e3e",
+  medium: "#d97706",
+  low: "#60a5fa",
+};
+
+const PRIORITY_CYCLE: (Priority | undefined)[] = [undefined, "high", "medium", "low"];
+
+function nextPriority(current?: Priority): Priority | undefined {
+  const idx = PRIORITY_CYCLE.indexOf(current);
+  return PRIORITY_CYCLE[(idx + 1) % PRIORITY_CYCLE.length];
+}
 
 interface Props {
   todo: Todo;
@@ -24,6 +37,7 @@ interface Props {
   onDelete: () => void;
   onEdit: (text: string) => void;
   onSetDueDate: (date: string | undefined) => void;
+  onSetPriority: (priority: Priority | undefined) => void;
 }
 
 function dueDateLabel(dateStr: string): string {
@@ -40,7 +54,7 @@ function dueDateColor(dateStr: string, colors: ReturnType<typeof import("@/hooks
   return colors.mutedForeground;
 }
 
-function TodoItemInner({ todo, onToggle, onDelete, onEdit, onSetDueDate }: Props) {
+function TodoItemInner({ todo, onToggle, onDelete, onEdit, onSetDueDate, onSetPriority }: Props) {
   const colors = useColors();
   const translateX = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -100,6 +114,12 @@ function TodoItemInner({ todo, onToggle, onDelete, onEdit, onSetDueDate }: Props
     }).start(() => onDelete());
   };
 
+  const handleCyclePriority = () => {
+    const next = nextPriority(todo.priority);
+    onSetPriority(next);
+    if (Platform.OS !== "web") Haptics.selectionAsync();
+  };
+
   const startEdit = () => {
     setEditText(todo.text);
     setEditing(true);
@@ -120,9 +140,11 @@ function TodoItemInner({ todo, onToggle, onDelete, onEdit, onSetDueDate }: Props
     setEditing(false);
   };
 
+  const priorityColor = todo.priority ? PRIORITY_COLORS[todo.priority] : colors.border;
+  const hasPriority = !!todo.priority;
+
   return (
     <View style={styles.wrapper}>
-      {/* Delete background (native swipe reveal) */}
       {Platform.OS !== "web" && (
         <Animated.View
           style={[
@@ -144,6 +166,24 @@ function TodoItemInner({ todo, onToggle, onDelete, onEdit, onSetDueDate }: Props
             { borderBottomColor: colors.border, backgroundColor: colors.cream },
           ]}
         >
+          {/* Priority dot — tap to cycle */}
+          <TouchableOpacity
+            onPress={handleCyclePriority}
+            activeOpacity={0.7}
+            style={styles.priorityBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+          >
+            <View
+              style={[
+                styles.priorityDot,
+                {
+                  backgroundColor: hasPriority ? priorityColor : "transparent",
+                  borderColor: hasPriority ? priorityColor : colors.border,
+                },
+              ]}
+            />
+          </TouchableOpacity>
+
           {/* Check button */}
           <TouchableOpacity
             onPress={handleToggle}
@@ -175,7 +215,6 @@ function TodoItemInner({ todo, onToggle, onDelete, onEdit, onSetDueDate }: Props
                 blurOnSubmit
                 multiline={false}
               />
-              {/* Date row inside edit mode */}
               <TouchableOpacity
                 style={styles.dateRow}
                 onPress={() => setShowDatePicker(true)}
@@ -279,7 +318,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 14,
     borderBottomWidth: 1,
-    gap: 12,
+    gap: 10,
+  },
+  priorityBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  priorityDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
   },
   checkBtn: {
     width: 26,
