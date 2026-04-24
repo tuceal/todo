@@ -18,7 +18,7 @@ import { useColors } from "@/hooks/useColors";
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { todos, activeFilter, addTodo, toggleTodo, deleteTodo } = useTodos();
+  const { todos, activeFilter, addTodo, toggleTodo, deleteTodo, editTodo } = useTodos();
 
   const filtered = useMemo(
     () => (activeFilter ? todos.filter((t) => t.category === activeFilter) : todos),
@@ -31,6 +31,7 @@ export default function HomeScreen() {
 
   const handleToggle = useCallback((id: string) => toggleTodo(id), [toggleTodo]);
   const handleDelete = useCallback((id: string) => deleteTodo(id), [deleteTodo]);
+  const handleEdit = useCallback((id: string, text: string) => editTodo(id, text), [editTodo]);
 
   const topPad = Platform.OS === "web" ? 80 : insets.top + 16;
 
@@ -40,9 +41,10 @@ export default function HomeScreen() {
         todo={item}
         onToggle={() => handleToggle(item.id)}
         onDelete={() => handleDelete(item.id)}
+        onEdit={(text) => handleEdit(item.id, text)}
       />
     ),
-    [handleToggle, handleDelete]
+    [handleToggle, handleDelete, handleEdit]
   );
 
   const keyExtractor = useCallback((item: Todo) => item.id, []);

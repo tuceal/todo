@@ -1,11 +1,12 @@
 import * as Haptics from "expo-haptics";
-import React, { memo, useRef } from "react";
+import React, { memo, useRef, useState } from "react";
 import {
   Animated,
   Platform,
   PanResponder,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -20,12 +21,17 @@ interface Props {
   todo: Todo;
   onToggle: () => void;
   onDelete: () => void;
+  onEdit: (text: string) => void;
 }
 
-function TodoItemInner({ todo, onToggle, onDelete }: Props) {
+function TodoItemInner({ todo, onToggle, onDelete, onEdit }: Props) {
   const colors = useColors();
   const translateX = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(todo.text);
+
   const deleteOpacity = translateX.interpolate({
     inputRange: [-DELETE_THRESHOLD, -SWIPE_THRESHOLD, 0],
     outputRange: [1, 0.6, 0],
@@ -35,7 +41,7 @@ function TodoItemInner({ todo, onToggle, onDelete }: Props) {
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, { dx, dy }) =>
-        Platform.OS !== "web" && Math.abs(dx) > Math.abs(dy) && dx < -8,
+        Platform.OS !== "web" && !editing && Math.abs(dx) > Math.abs(dy) && dx < -8,
       onPanResponderMove: (_, { dx }) => {
         if (dx < 0) translateX.setValue(Math.max(dx, -DELETE_THRESHOLD - 20));
       },
@@ -59,6 +65,7 @@ function TodoItemInner({ todo, onToggle, onDelete }: Props) {
   ).current;
 
   const handleToggle = () => {
+    if (editing) return;
     if (Platform.OS !== "web") Haptics.selectionAsync();
     Animated.sequence([
       Animated.timing(scaleAnim, { toValue: 0.93, duration: 70, useNativeDriver: true }),
@@ -74,6 +81,26 @@ function TodoItemInner({ todo, onToggle, onDelete }: Props) {
       duration: 180,
       useNativeDriver: true,
     }).start(() => onDelete());
+  };
+
+  const startEdit = () => {
+    setEditText(todo.text);
+    setEditing(true);
+    if (Platform.OS !== "web") Haptics.selectionAsync();
+  };
+
+  const saveEdit = () => {
+    const trimmed = editText.trim();
+    if (trimmed && trimmed !== todo.text) {
+      onEdit(trimmed);
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+    setEditing(false);
+  };
+
+  const cancelEdit = () => {
+    setEditText(todo.text);
+    setEditing(false);
   };
 
   return (
@@ -115,35 +142,65 @@ function TodoItemInner({ todo, onToggle, onDelete }: Props) {
             {todo.done && <Feather name="check" size={13} color="#fff" />}
           </TouchableOpacity>
 
-          {/* Text + category label */}
-          <View style={styles.textWrap}>
-            <Text
+          {/* Text or edit input */}
+          {editing ? (
+            <TextInput
               style={[
-                styles.text,
-                {
-                  color: todo.done ? colors.strikethrough : colors.darkText,
-                  textDecorationLine: todo.done ? "line-through" : "none",
-                },
+                styles.editInput,
+                { color: colors.darkText, borderBottomColor: colors.gold },
               ]}
-              numberOfLines={3}
-            >
-              {todo.text}
-            </Text>
-            {todo.category ? (
-              <Text style={[styles.catLabel, { color: colors.gold }]}>{todo.category}</Text>
-            ) : null}
-          </View>
-
-          {/* Web-only delete button */}
-          {Platform.OS === "web" && (
-            <TouchableOpacity
-              onPress={handleWebDelete}
-              activeOpacity={0.7}
-              style={styles.deleteBtn}
-            >
-              <Feather name="trash-2" size={15} color={colors.mutedForeground} />
-            </TouchableOpacity>
+              value={editText}
+              onChangeText={setEditText}
+              onSubmitEditing={saveEdit}
+              autoFocus
+              returnKeyType="done"
+              blurOnSubmit
+              multiline={false}
+            />
+          ) : (
+            <View style={styles.textWrap}>
+              <Text
+                style={[
+                  styles.text,
+                  {
+                    color: todo.done ? colors.strikethrough : colors.darkText,
+                    textDecorationLine: todo.done ? "line-through" : "none",
+                  },
+                ]}
+                numberOfLines={3}
+              >
+                {todo.text}
+              </Text>
+              {todo.category ? (
+                <Text style={[styles.catLabel, { color: colors.gold }]}>{todo.category}</Text>
+              ) : null}
+            </View>
           )}
+
+          {/* Action buttons */}
+          <View style={styles.actions}>
+            {editing ? (
+              <>
+                <TouchableOpacity onPress={saveEdit} activeOpacity={0.7} style={styles.actionBtn}>
+                  <Feather name="check" size={16} color={colors.gold} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={cancelEdit} activeOpacity={0.7} style={styles.actionBtn}>
+                  <Feather name="x" size={16} color={colors.mutedForeground} />
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TouchableOpacity onPress={startEdit} activeOpacity={0.7} style={styles.actionBtn}>
+                  <Feather name="edit-2" size={15} color={colors.mutedForeground} />
+                </TouchableOpacity>
+                {Platform.OS === "web" && (
+                  <TouchableOpacity onPress={handleWebDelete} activeOpacity={0.7} style={styles.actionBtn}>
+                    <Feather name="trash-2" size={15} color={colors.mutedForeground} />
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+          </View>
         </View>
       </Animated.View>
     </View>
@@ -170,9 +227,9 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    gap: 14,
+    gap: 12,
   },
   checkBtn: {
     width: 26,
@@ -197,8 +254,21 @@ const styles = StyleSheet.create({
     fontFamily: "Lato_400Regular",
     letterSpacing: 0.3,
   },
-  deleteBtn: {
-    padding: 6,
+  editInput: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: "Lato_400Regular",
+    borderBottomWidth: 1.5,
+    paddingVertical: 2,
+    paddingHorizontal: 0,
+    lineHeight: 22,
+  },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
     flexShrink: 0,
+  },
+  actionBtn: {
+    padding: 6,
   },
 });
