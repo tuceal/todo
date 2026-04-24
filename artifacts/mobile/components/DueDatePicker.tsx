@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import {
-  Modal,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
@@ -43,178 +43,257 @@ function addDays(n: number): string {
   return toDateStr(d);
 }
 
-interface Option {
+function parseCustomDate(input: string): string | null {
+  const trimmed = input.trim();
+  // DD.MM.YYYY
+  const m1 = trimmed.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (m1) {
+    const d = new Date(parseInt(m1[3]), parseInt(m1[2]) - 1, parseInt(m1[1]));
+    if (!isNaN(d.getTime())) return toDateStr(d);
+  }
+  // YYYY-MM-DD (ISO)
+  const m2 = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m2) {
+    const d = new Date(trimmed + "T00:00:00");
+    if (!isNaN(d.getTime())) return trimmed;
+  }
+  return null;
+}
+
+const PRESETS = [
+  { label: "Bugün", value: () => addDays(0) },
+  { label: "Yarın", value: () => addDays(1) },
+  { label: "Bu hafta", value: () => addDays(7) },
+  { label: "2 hafta", value: () => addDays(14) },
+];
+
+interface ChipProps {
   label: string;
   sublabel?: string;
-  value: string | null;
+  active?: boolean;
   danger?: boolean;
+  onPress: () => void;
+}
+
+function Chip({ label, sublabel, active, danger, onPress }: ChipProps) {
+  const colors = useColors();
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      style={[
+        styles.chip,
+        {
+          borderColor: danger ? "#e53e3e" : active ? colors.gold : colors.border,
+          backgroundColor: active ? colors.gold + "22" : "transparent",
+        },
+      ]}
+    >
+      <Text
+        style={[
+          styles.chipLabel,
+          { color: danger ? "#e53e3e" : active ? colors.gold : colors.darkText },
+        ]}
+      >
+        {label}
+      </Text>
+      {sublabel ? (
+        <Text style={[styles.chipSub, { color: active ? colors.gold : colors.mutedForeground }]}>
+          {sublabel}
+        </Text>
+      ) : null}
+    </TouchableOpacity>
+  );
 }
 
 interface Props {
-  visible: boolean;
   currentDate?: string;
   onSelect: (date: string | undefined) => void;
-  onClose: () => void;
 }
 
-export function DueDatePicker({ visible, currentDate, onSelect, onClose }: Props) {
+export function DueDatePicker({ currentDate, onSelect }: Props) {
   const colors = useColors();
+  const [showCustom, setShowCustom] = useState(false);
+  const [customInput, setCustomInput] = useState("");
+  const [customError, setCustomError] = useState(false);
 
-  const options: Option[] = [
-    { label: "Bugün", sublabel: formatDateTR(addDays(0)), value: addDays(0) },
-    { label: "Yarın", sublabel: formatDateTR(addDays(1)), value: addDays(1) },
-    { label: "Bu hafta", sublabel: formatDateTR(addDays(7)), value: addDays(7) },
-    { label: "2 hafta sonra", sublabel: formatDateTR(addDays(14)), value: addDays(14) },
-    ...(currentDate ? [{ label: "Tarihi sil", value: null, danger: true }] : []),
-  ];
+  const presetValues = PRESETS.map((p) => p.value());
+  const isCustomDate = !!currentDate && !presetValues.includes(currentDate);
 
-  const handleSelect = (value: string | null) => {
-    onSelect(value ?? undefined);
-    onClose();
+  const handleCustomSubmit = () => {
+    const parsed = parseCustomDate(customInput);
+    if (parsed) {
+      onSelect(parsed);
+      setCustomInput("");
+      setCustomError(false);
+      setShowCustom(false);
+    } else {
+      setCustomError(true);
+    }
   };
 
-  if (Platform.OS === "web") {
-    if (!visible) return null;
-    return (
-      <View style={[styles.webOverlay]}>
-        <TouchableWithoutFeedback onPress={onClose}>
-          <View style={styles.webBackdrop} />
-        </TouchableWithoutFeedback>
-        <View style={[styles.webCard, { backgroundColor: colors.cream, shadowColor: colors.darkText }]}>
-          <Text style={[styles.title, { color: colors.darkText }]}>Bitiş tarihi</Text>
-          {options.map((opt) => (
-            <TouchableOpacity
-              key={opt.label}
-              style={[styles.option, { borderBottomColor: colors.border }]}
-              onPress={() => handleSelect(opt.value)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.optionLabel, { color: opt.danger ? "#e53e3e" : colors.darkText }]}>
-                {opt.label}
-              </Text>
-              {opt.sublabel && (
-                <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>{opt.sublabel}</Text>
-              )}
-            </TouchableOpacity>
-          ))}
-          <TouchableOpacity style={styles.cancelBtn} onPress={onClose} activeOpacity={0.7}>
-            <Text style={[styles.cancelLabel, { color: colors.mutedForeground }]}>İptal</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
+  const handleCustomChange = (text: string) => {
+    setCustomInput(text);
+    setCustomError(false);
+  };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.backdrop} />
-      </TouchableWithoutFeedback>
-      <View style={[styles.sheet, { backgroundColor: colors.cream }]}>
-        <View style={[styles.handle, { backgroundColor: colors.border }]} />
-        <Text style={[styles.title, { color: colors.darkText }]}>Bitiş tarihi</Text>
-        {options.map((opt) => (
-          <TouchableOpacity
-            key={opt.label}
-            style={[styles.option, { borderBottomColor: colors.border }]}
-            onPress={() => handleSelect(opt.value)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.optionLabel, { color: opt.danger ? "#e53e3e" : colors.darkText }]}>
-              {opt.label}
-            </Text>
-            {opt.sublabel && (
-              <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>{opt.sublabel}</Text>
-            )}
-          </TouchableOpacity>
-        ))}
-        <TouchableOpacity style={styles.cancelBtn} onPress={onClose} activeOpacity={0.7}>
-          <Text style={[styles.cancelLabel, { color: colors.mutedForeground }]}>İptal</Text>
-        </TouchableOpacity>
-      </View>
-    </Modal>
+    <View style={styles.wrapper}>
+      {/* Horizontal chip row */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.row}
+        keyboardShouldPersistTaps="handled"
+      >
+        {PRESETS.map((p) => {
+          const val = p.value();
+          return (
+            <Chip
+              key={p.label}
+              label={p.label}
+              sublabel={formatDateTR(val)}
+              active={currentDate === val}
+              onPress={() => {
+                onSelect(val);
+                setShowCustom(false);
+              }}
+            />
+          );
+        })}
+
+        {/* Custom date chip */}
+        <Chip
+          label={isCustomDate ? formatDateTR(currentDate!) : "Özel"}
+          sublabel={isCustomDate ? undefined : undefined}
+          active={showCustom || isCustomDate}
+          onPress={() => {
+            setShowCustom((v) => !v);
+            setCustomInput(isCustomDate ? currentDate! : "");
+            setCustomError(false);
+          }}
+        />
+
+        {/* Clear chip */}
+        {currentDate && (
+          <Chip
+            label="Sil"
+            danger
+            onPress={() => {
+              onSelect(undefined);
+              setShowCustom(false);
+              setCustomInput("");
+            }}
+          />
+        )}
+      </ScrollView>
+
+      {/* Custom date input — shown when Özel chip is active */}
+      {showCustom && (
+        <View style={[styles.customRow, { borderColor: customError ? "#e53e3e" : colors.border }]}>
+          {Platform.OS === "web" ? (
+            // Native browser date picker on web
+            <View style={styles.webDateWrap}>
+              {/* @ts-ignore */}
+              <input
+                type="date"
+                defaultValue={isCustomDate ? currentDate : ""}
+                onChange={(e: any) => {
+                  const v = e.target.value;
+                  if (v) {
+                    onSelect(v);
+                    setShowCustom(false);
+                  }
+                }}
+                style={{
+                  fontFamily: "inherit",
+                  fontSize: 13,
+                  color: colors.darkText,
+                  backgroundColor: "transparent",
+                  border: "none",
+                  outline: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  width: "100%",
+                }}
+              />
+            </View>
+          ) : (
+            <>
+              <Feather name="calendar" size={13} color={colors.mutedForeground} />
+              <TextInput
+                style={[styles.customInput, { color: colors.darkText }]}
+                placeholder="GG.AA.YYYY"
+                placeholderTextColor={colors.mutedForeground}
+                value={customInput}
+                onChangeText={handleCustomChange}
+                keyboardType="numeric"
+                maxLength={10}
+                returnKeyType="done"
+                onSubmitEditing={handleCustomSubmit}
+                autoFocus
+              />
+              <TouchableOpacity onPress={handleCustomSubmit} activeOpacity={0.7}>
+                <Feather name="check" size={15} color={customError ? "#e53e3e" : colors.gold} />
+              </TouchableOpacity>
+            </>
+          )}
+          {customError && (
+            <Text style={styles.errorText}>Geçersiz tarih</Text>
+          )}
+        </View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.35)",
+  wrapper: {
+    gap: 8,
   },
-  sheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingBottom: 36,
-    paddingTop: 12,
-    elevation: 20,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    alignSelf: "center",
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 13,
-    fontFamily: "Lato_400Regular",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-    marginBottom: 8,
-    opacity: 0.5,
-  },
-  option: {
+  row: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    gap: 8,
+    paddingVertical: 2,
+  },
+  chip: {
+    borderWidth: 1.5,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     alignItems: "center",
-    paddingVertical: 15,
-    borderBottomWidth: 1,
   },
-  optionLabel: {
-    fontSize: 16,
-    fontFamily: "Lato_400Regular",
-  },
-  optionSub: {
+  chipLabel: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
   },
-  cancelBtn: {
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-  cancelLabel: {
-    fontSize: 15,
+  chipSub: {
+    fontSize: 10,
     fontFamily: "Lato_400Regular",
+    marginTop: 1,
   },
-  webOverlay: {
-    position: "absolute" as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 999,
-    justifyContent: "center",
+  customRow: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
-  webBackdrop: {
-    position: "absolute" as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.35)",
+  webDateWrap: {
+    flex: 1,
   },
-  webCard: {
-    width: 300,
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 8,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 10,
-    zIndex: 1000,
+  customInput: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "Lato_400Regular",
+    padding: 0,
+  },
+  errorText: {
+    fontSize: 11,
+    color: "#e53e3e",
+    fontFamily: "Lato_400Regular",
+    marginTop: 2,
   },
 });

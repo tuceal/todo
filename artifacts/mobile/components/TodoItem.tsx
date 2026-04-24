@@ -47,21 +47,29 @@ function dueDateLabel(dateStr: string): string {
   return formatDateTR(dateStr);
 }
 
-function dueDateColor(dateStr: string, colors: ReturnType<typeof import("@/hooks/useColors").useColors>): string {
+function dueDateColor(
+  dateStr: string,
+  colors: ReturnType<typeof import("@/hooks/useColors").useColors>
+): string {
   const status = dueDateStatus(dateStr);
   if (status === "overdue") return "#e53e3e";
   if (status === "today") return colors.gold;
   return colors.mutedForeground;
 }
 
-function TodoItemInner({ todo, onToggle, onDelete, onEdit, onSetDueDate, onSetPriority }: Props) {
+function TodoItemInner({
+  todo,
+  onToggle,
+  onDelete,
+  onEdit,
+  onSetDueDate,
+  onSetPriority,
+}: Props) {
   const colors = useColors();
   const translateX = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
-
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(todo.text);
-  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const deleteOpacity = translateX.interpolate({
     inputRange: [-DELETE_THRESHOLD, -SWIPE_THRESHOLD, 0],
@@ -72,13 +80,17 @@ function TodoItemInner({ todo, onToggle, onDelete, onEdit, onSetDueDate, onSetPr
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, { dx, dy }) =>
-        Platform.OS !== "web" && !editing && Math.abs(dx) > Math.abs(dy) && dx < -8,
+        Platform.OS !== "web" &&
+        !editing &&
+        Math.abs(dx) > Math.abs(dy) &&
+        dx < -8,
       onPanResponderMove: (_, { dx }) => {
         if (dx < 0) translateX.setValue(Math.max(dx, -DELETE_THRESHOLD - 20));
       },
       onPanResponderRelease: (_, { dx }) => {
         if (dx < -DELETE_THRESHOLD) {
-          if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          if (Platform.OS !== "web")
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           Animated.timing(translateX, {
             toValue: -500,
             duration: 200,
@@ -99,8 +111,16 @@ function TodoItemInner({ todo, onToggle, onDelete, onEdit, onSetDueDate, onSetPr
     if (editing) return;
     if (Platform.OS !== "web") Haptics.selectionAsync();
     Animated.sequence([
-      Animated.timing(scaleAnim, { toValue: 0.93, duration: 70, useNativeDriver: true }),
-      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, bounciness: 4 }),
+      Animated.timing(scaleAnim, {
+        toValue: 0.93,
+        duration: 70,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        bounciness: 4,
+      }),
     ]).start();
     onToggle();
   };
@@ -115,8 +135,7 @@ function TodoItemInner({ todo, onToggle, onDelete, onEdit, onSetDueDate, onSetPr
   };
 
   const handleCyclePriority = () => {
-    const next = nextPriority(todo.priority);
-    onSetPriority(next);
+    onSetPriority(nextPriority(todo.priority));
     if (Platform.OS !== "web") Haptics.selectionAsync();
   };
 
@@ -130,7 +149,8 @@ function TodoItemInner({ todo, onToggle, onDelete, onEdit, onSetDueDate, onSetPr
     const trimmed = editText.trim();
     if (trimmed && trimmed !== todo.text) {
       onEdit(trimmed);
-      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (Platform.OS !== "web")
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
     setEditing(false);
   };
@@ -140,11 +160,14 @@ function TodoItemInner({ todo, onToggle, onDelete, onEdit, onSetDueDate, onSetPr
     setEditing(false);
   };
 
-  const priorityColor = todo.priority ? PRIORITY_COLORS[todo.priority] : colors.border;
+  const priorityColor = todo.priority
+    ? PRIORITY_COLORS[todo.priority]
+    : colors.border;
   const hasPriority = !!todo.priority;
 
   return (
     <View style={styles.wrapper}>
+      {/* Swipe-to-delete background (native only) */}
       {Platform.OS !== "web" && (
         <Animated.View
           style={[
@@ -160,13 +183,17 @@ function TodoItemInner({ todo, onToggle, onDelete, onEdit, onSetDueDate, onSetPr
         style={[{ transform: [{ translateX }, { scale: scaleAnim }] }]}
         {...(Platform.OS !== "web" ? panResponder.panHandlers : {})}
       >
+        {/* ── Main row ── */}
         <View
           style={[
             styles.container,
-            { borderBottomColor: colors.border, backgroundColor: colors.cream },
+            {
+              borderBottomColor: editing ? "transparent" : colors.border,
+              backgroundColor: colors.cream,
+            },
           ]}
         >
-          {/* Priority dot — tap to cycle */}
+          {/* Priority dot */}
           <TouchableOpacity
             onPress={handleCyclePriority}
             activeOpacity={0.7}
@@ -199,38 +226,8 @@ function TodoItemInner({ todo, onToggle, onDelete, onEdit, onSetDueDate, onSetPr
             {todo.done && <Feather name="check" size={13} color="#fff" />}
           </TouchableOpacity>
 
-          {/* Text or edit input */}
-          {editing ? (
-            <View style={styles.editWrap}>
-              <TextInput
-                style={[
-                  styles.editInput,
-                  { color: colors.darkText, borderBottomColor: colors.gold },
-                ]}
-                value={editText}
-                onChangeText={setEditText}
-                onSubmitEditing={saveEdit}
-                autoFocus
-                returnKeyType="done"
-                blurOnSubmit
-                multiline={false}
-              />
-              <TouchableOpacity
-                style={styles.dateRow}
-                onPress={() => setShowDatePicker(true)}
-                activeOpacity={0.7}
-              >
-                <Feather
-                  name="calendar"
-                  size={13}
-                  color={todo.dueDate ? colors.gold : colors.mutedForeground}
-                />
-                <Text style={[styles.dateRowText, { color: todo.dueDate ? colors.gold : colors.mutedForeground }]}>
-                  {todo.dueDate ? dueDateLabel(todo.dueDate) : "Tarih ekle"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
+          {/* Text (view mode) */}
+          {!editing && (
             <View style={styles.textWrap}>
               <Text
                 style={[
@@ -246,10 +243,17 @@ function TodoItemInner({ todo, onToggle, onDelete, onEdit, onSetDueDate, onSetPr
               </Text>
               <View style={styles.metaRow}>
                 {todo.category ? (
-                  <Text style={[styles.metaLabel, { color: colors.gold }]}>{todo.category}</Text>
+                  <Text style={[styles.metaLabel, { color: colors.gold }]}>
+                    {todo.category}
+                  </Text>
                 ) : null}
                 {todo.dueDate ? (
-                  <Text style={[styles.metaLabel, { color: dueDateColor(todo.dueDate, colors) }]}>
+                  <Text
+                    style={[
+                      styles.metaLabel,
+                      { color: dueDateColor(todo.dueDate, colors) },
+                    ]}
+                  >
                     {todo.category ? "  ·  " : ""}
                     <Feather name="calendar" size={10} />
                     {"  " + dueDateLabel(todo.dueDate)}
@@ -259,39 +263,88 @@ function TodoItemInner({ todo, onToggle, onDelete, onEdit, onSetDueDate, onSetPr
             </View>
           )}
 
+          {/* Editing: text input takes full remaining width */}
+          {editing && (
+            <TextInput
+              style={[
+                styles.editInput,
+                { color: colors.darkText, borderBottomColor: colors.gold, flex: 1 },
+              ]}
+              value={editText}
+              onChangeText={setEditText}
+              onSubmitEditing={saveEdit}
+              autoFocus
+              returnKeyType="done"
+              blurOnSubmit
+              multiline={false}
+            />
+          )}
+
           {/* Action buttons */}
           <View style={styles.actions}>
             {editing ? (
               <>
-                <TouchableOpacity onPress={saveEdit} activeOpacity={0.7} style={styles.actionBtn}>
+                <TouchableOpacity
+                  onPress={saveEdit}
+                  activeOpacity={0.7}
+                  style={styles.actionBtn}
+                >
                   <Feather name="check" size={16} color={colors.gold} />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={cancelEdit} activeOpacity={0.7} style={styles.actionBtn}>
+                <TouchableOpacity
+                  onPress={cancelEdit}
+                  activeOpacity={0.7}
+                  style={styles.actionBtn}
+                >
                   <Feather name="x" size={16} color={colors.mutedForeground} />
                 </TouchableOpacity>
               </>
             ) : (
               <>
-                <TouchableOpacity onPress={startEdit} activeOpacity={0.7} style={styles.actionBtn}>
-                  <Feather name="edit-2" size={15} color={colors.mutedForeground} />
+                <TouchableOpacity
+                  onPress={startEdit}
+                  activeOpacity={0.7}
+                  style={styles.actionBtn}
+                >
+                  <Feather
+                    name="edit-2"
+                    size={15}
+                    color={colors.mutedForeground}
+                  />
                 </TouchableOpacity>
                 {Platform.OS === "web" && (
-                  <TouchableOpacity onPress={handleWebDelete} activeOpacity={0.7} style={styles.actionBtn}>
-                    <Feather name="trash-2" size={15} color={colors.mutedForeground} />
+                  <TouchableOpacity
+                    onPress={handleWebDelete}
+                    activeOpacity={0.7}
+                    style={styles.actionBtn}
+                  >
+                    <Feather
+                      name="trash-2"
+                      size={15}
+                      color={colors.mutedForeground}
+                    />
                   </TouchableOpacity>
                 )}
               </>
             )}
           </View>
         </View>
-      </Animated.View>
 
-      <DueDatePicker
-        visible={showDatePicker}
-        currentDate={todo.dueDate}
-        onSelect={(date) => onSetDueDate(date)}
-        onClose={() => setShowDatePicker(false)}
-      />
+        {/* ── Date chip row (only in edit mode) ── */}
+        {editing && (
+          <View
+            style={[
+              styles.dateSection,
+              { borderBottomColor: colors.border, backgroundColor: colors.cream },
+            ]}
+          >
+            <DueDatePicker
+              currentDate={todo.dueDate}
+              onSelect={onSetDueDate}
+            />
+          </View>
+        )}
+      </Animated.View>
     </View>
   );
 }
@@ -358,10 +411,6 @@ const styles = StyleSheet.create({
     fontFamily: "Lato_400Regular",
     letterSpacing: 0.3,
   },
-  editWrap: {
-    flex: 1,
-    gap: 6,
-  },
   editInput: {
     fontSize: 16,
     fontFamily: "Lato_400Regular",
@@ -370,16 +419,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     lineHeight: 22,
   },
-  dateRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingTop: 2,
-  },
-  dateRowText: {
-    fontSize: 12,
-    fontFamily: "Lato_400Regular",
-  },
   actions: {
     flexDirection: "row",
     alignItems: "center",
@@ -387,5 +426,10 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     padding: 6,
+  },
+  dateSection: {
+    paddingHorizontal: 46,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
   },
 });
