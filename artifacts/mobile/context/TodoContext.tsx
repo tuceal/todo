@@ -7,6 +7,7 @@ export interface Todo {
   done: boolean;
   createdAt: number;
   category?: string;
+  dueDate?: string;
 }
 
 interface TodoContextValue {
@@ -17,6 +18,7 @@ interface TodoContextValue {
   toggleTodo: (id: string) => void;
   deleteTodo: (id: string) => void;
   editTodo: (id: string, text: string) => void;
+  setDueDate: (id: string, date: string | undefined) => void;
   addCategory: (name: string) => void;
   deleteCategory: (name: string) => void;
   setActiveFilter: (cat: string | null) => void;
@@ -94,6 +96,9 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
     setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, text: trimmed } : t)));
   };
 
+  const setDueDate = (id: string, date: string | undefined) =>
+    setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, dueDate: date } : t)));
+
   const addCategory = (name: string) => {
     const trimmed = name.trim();
     if (!trimmed || categories.includes(trimmed)) return;
@@ -116,6 +121,7 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
         toggleTodo,
         deleteTodo,
         editTodo,
+        setDueDate,
         addCategory,
         deleteCategory,
         setActiveFilter,

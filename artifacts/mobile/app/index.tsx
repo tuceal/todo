@@ -18,7 +18,7 @@ import { useColors } from "@/hooks/useColors";
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { todos, activeFilter, addTodo, toggleTodo, deleteTodo, editTodo } = useTodos();
+  const { todos, activeFilter, addTodo, toggleTodo, deleteTodo, editTodo, setDueDate } = useTodos();
 
   const filtered = useMemo(
     () => (activeFilter ? todos.filter((t) => t.category === activeFilter) : todos),
@@ -32,6 +32,7 @@ export default function HomeScreen() {
   const handleToggle = useCallback((id: string) => toggleTodo(id), [toggleTodo]);
   const handleDelete = useCallback((id: string) => deleteTodo(id), [deleteTodo]);
   const handleEdit = useCallback((id: string, text: string) => editTodo(id, text), [editTodo]);
+  const handleSetDueDate = useCallback((id: string, date: string | undefined) => setDueDate(id, date), [setDueDate]);
 
   const topPad = Platform.OS === "web" ? 80 : insets.top + 16;
 
@@ -42,9 +43,10 @@ export default function HomeScreen() {
         onToggle={() => handleToggle(item.id)}
         onDelete={() => handleDelete(item.id)}
         onEdit={(text) => handleEdit(item.id, text)}
+        onSetDueDate={(date) => handleSetDueDate(item.id, date)}
       />
     ),
-    [handleToggle, handleDelete, handleEdit]
+    [handleToggle, handleDelete, handleEdit, handleSetDueDate]
   );
 
   const keyExtractor = useCallback((item: Todo) => item.id, []);

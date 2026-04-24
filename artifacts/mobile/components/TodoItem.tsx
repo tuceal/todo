@@ -13,6 +13,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { Todo } from "@/context/TodoContext";
+import { DueDatePicker, formatDateTR, dueDateStatus } from "@/components/DueDatePicker";
 
 const SWIPE_THRESHOLD = 90;
 const DELETE_THRESHOLD = 130;
@@ -22,15 +23,31 @@ interface Props {
   onToggle: () => void;
   onDelete: () => void;
   onEdit: (text: string) => void;
+  onSetDueDate: (date: string | undefined) => void;
 }
 
-function TodoItemInner({ todo, onToggle, onDelete, onEdit }: Props) {
+function dueDateLabel(dateStr: string): string {
+  const status = dueDateStatus(dateStr);
+  if (status === "today") return "Bugün";
+  if (status === "overdue") return `${formatDateTR(dateStr)} · Gecikti`;
+  return formatDateTR(dateStr);
+}
+
+function dueDateColor(dateStr: string, colors: ReturnType<typeof import("@/hooks/useColors").useColors>): string {
+  const status = dueDateStatus(dateStr);
+  if (status === "overdue") return "#e53e3e";
+  if (status === "today") return colors.gold;
+  return colors.mutedForeground;
+}
+
+function TodoItemInner({ todo, onToggle, onDelete, onEdit, onSetDueDate }: Props) {
   const colors = useColors();
   const translateX = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(todo.text);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const deleteOpacity = translateX.interpolate({
     inputRange: [-DELETE_THRESHOLD, -SWIPE_THRESHOLD, 0],
@@ -144,19 +161,36 @@ function TodoItemInner({ todo, onToggle, onDelete, onEdit }: Props) {
 
           {/* Text or edit input */}
           {editing ? (
-            <TextInput
-              style={[
-                styles.editInput,
-                { color: colors.darkText, borderBottomColor: colors.gold },
-              ]}
-              value={editText}
-              onChangeText={setEditText}
-              onSubmitEditing={saveEdit}
-              autoFocus
-              returnKeyType="done"
-              blurOnSubmit
-              multiline={false}
-            />
+            <View style={styles.editWrap}>
+              <TextInput
+                style={[
+                  styles.editInput,
+                  { color: colors.darkText, borderBottomColor: colors.gold },
+                ]}
+                value={editText}
+                onChangeText={setEditText}
+                onSubmitEditing={saveEdit}
+                autoFocus
+                returnKeyType="done"
+                blurOnSubmit
+                multiline={false}
+              />
+              {/* Date row inside edit mode */}
+              <TouchableOpacity
+                style={styles.dateRow}
+                onPress={() => setShowDatePicker(true)}
+                activeOpacity={0.7}
+              >
+                <Feather
+                  name="calendar"
+                  size={13}
+                  color={todo.dueDate ? colors.gold : colors.mutedForeground}
+                />
+                <Text style={[styles.dateRowText, { color: todo.dueDate ? colors.gold : colors.mutedForeground }]}>
+                  {todo.dueDate ? dueDateLabel(todo.dueDate) : "Tarih ekle"}
+                </Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <View style={styles.textWrap}>
               <Text
@@ -171,9 +205,18 @@ function TodoItemInner({ todo, onToggle, onDelete, onEdit }: Props) {
               >
                 {todo.text}
               </Text>
-              {todo.category ? (
-                <Text style={[styles.catLabel, { color: colors.gold }]}>{todo.category}</Text>
-              ) : null}
+              <View style={styles.metaRow}>
+                {todo.category ? (
+                  <Text style={[styles.metaLabel, { color: colors.gold }]}>{todo.category}</Text>
+                ) : null}
+                {todo.dueDate ? (
+                  <Text style={[styles.metaLabel, { color: dueDateColor(todo.dueDate, colors) }]}>
+                    {todo.category ? "  ·  " : ""}
+                    <Feather name="calendar" size={10} />
+                    {"  " + dueDateLabel(todo.dueDate)}
+                  </Text>
+                ) : null}
+              </View>
             </View>
           )}
 
@@ -203,6 +246,13 @@ function TodoItemInner({ todo, onToggle, onDelete, onEdit }: Props) {
           </View>
         </View>
       </Animated.View>
+
+      <DueDatePicker
+        visible={showDatePicker}
+        currentDate={todo.dueDate}
+        onSelect={(date) => onSetDueDate(date)}
+        onClose={() => setShowDatePicker(false)}
+      />
     </View>
   );
 }
@@ -249,19 +299,36 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontFamily: "Lato_400Regular",
   },
-  catLabel: {
+  metaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  metaLabel: {
     fontSize: 11,
     fontFamily: "Lato_400Regular",
     letterSpacing: 0.3,
   },
-  editInput: {
+  editWrap: {
     flex: 1,
+    gap: 6,
+  },
+  editInput: {
     fontSize: 16,
     fontFamily: "Lato_400Regular",
     borderBottomWidth: 1.5,
     paddingVertical: 2,
     paddingHorizontal: 0,
     lineHeight: 22,
+  },
+  dateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingTop: 2,
+  },
+  dateRowText: {
+    fontSize: 12,
+    fontFamily: "Lato_400Regular",
   },
   actions: {
     flexDirection: "row",
