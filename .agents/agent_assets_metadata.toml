@@ -1,8 +1,13 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "_rd9g4HFOq4PuQC6qAIID"
 uri = "file://artifacts/mobile/assets/images/icon.png"
 type = "image"
 title = "todo app icon"
+
+[[outputs]]
+id = "YsQCTC64Ydhpp6jaofvPe"
+uri = "file://artifacts/mobile/yapilacaklar-web.tar.gz"
+type = "unspecified"
+title = "Yapılacaklar - Web Build (tar.gz)"
