@@ -38,6 +38,12 @@ function CategoryBarInner() {
   };
 
   const handleDeleteCategory = (cat: string) => {
+    if (Platform.OS === "web") {
+      if (window.confirm(`"${cat}" silinsin mi?\nBu kategorideki görevler kategorisiz kalacak.`)) {
+        deleteCategory(cat);
+      }
+      return;
+    }
     Alert.alert(
       `"${cat}" silinsin mi?`,
       "Bu kategorideki görevler kategorisiz kalacak.",
