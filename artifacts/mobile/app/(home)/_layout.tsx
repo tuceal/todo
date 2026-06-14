@@ -1,8 +1,9 @@
 import { useAuth } from "@clerk/expo";
-import { Redirect } from "expo-router";
+import { Redirect, Stack } from "expo-router";
 import { View, ActivityIndicator } from "react-native";
+import { TodoProvider } from "@/context/TodoContext";
 
-export default function Index() {
+export default function HomeLayout() {
   const { isSignedIn, isLoaded } = useAuth();
 
   if (!isLoaded) {
@@ -13,6 +14,11 @@ export default function Index() {
     );
   }
 
-  if (isSignedIn) return <Redirect href="/(home)" />;
-  return <Redirect href="/(auth)/sign-in" />;
+  if (!isSignedIn) return <Redirect href="/(auth)/sign-in" />;
+
+  return (
+    <TodoProvider>
+      <Stack screenOptions={{ headerShown: false }} />
+    </TodoProvider>
+  );
 }

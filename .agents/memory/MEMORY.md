@@ -1,0 +1,2 @@
+- [RNW pnpm fix](rnw-pnpm-fix.md) — react-native-web@0.21 dist/exports/ is missing in pnpm store; fix via metro.config.js resolveRequest redirecting dist/ → src/.
+- [Clerk Expo web stub](clerk-expo-web-stub.md) — @clerk/expo NativeClerkModule crashes on web (TurboModuleRegistry.get at module top-level); stub via metro resolveRequest on platform==="web".
