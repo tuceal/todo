@@ -1,4 +1,6 @@
 import { useRef, useState } from "react";
+import { categoryColor } from "../categories";
+import { XIcon, categoryIcon } from "./Icons";
 
 interface Props {
   categories: string[];
@@ -25,29 +27,35 @@ export function CategoryBar({ categories, active, counts, onSelect, onAdd, onRem
   };
 
   return (
-    <div className="chips" role="tablist">
-      <button className={`chip${active === null ? " active" : ""}`} onClick={() => onSelect(null)}>
+    <div className="chips">
+      <button className={`chip all${active === null ? " active" : ""}`} onClick={() => onSelect(null)}>
         Tümü
       </button>
-      {categories.map((c) => (
-        <span key={c} className={`chip${active === c ? " active" : ""}`}>
-          <button className="chip-label" onClick={() => onSelect(c)}>
-            {c}
-            {counts[c] ? <small>{counts[c]}</small> : null}
-          </button>
-          {active === c && (
-            <button
-              className="chip-x"
-              aria-label={`${c} kategorisini sil`}
-              onClick={() => {
-                if (confirm(`"${c}" kategorisi silinsin mi? Görevler silinmez, kategorisiz kalır.`)) onRemove(c);
-              }}
-            >
-              ×
+      {categories.map((c) => {
+        const Icon = categoryIcon(c);
+        const col = categoryColor(c, categories);
+        const on = active === c;
+        return (
+          <span key={c} className={`chip${on ? " active" : ""}`} style={on ? undefined : { background: col.bg, color: col.fg }}>
+            <button className="chip-label" onClick={() => onSelect(on ? null : c)}>
+              <Icon size={16} />
+              {c}
+              {counts[c] ? <small>{counts[c]}</small> : null}
             </button>
-          )}
-        </span>
-      ))}
+            {on && (
+              <button
+                className="chip-x"
+                aria-label={`${c} kategorisini sil`}
+                onClick={() => {
+                  if (confirm(`"${c}" kategorisi silinsin mi? Görevler silinmez, kategorisiz kalır.`)) onRemove(c);
+                }}
+              >
+                <XIcon size={14} />
+              </button>
+            )}
+          </span>
+        );
+      })}
       {adding ? (
         <input
           className="chip chip-input"

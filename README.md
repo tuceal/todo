@@ -1,51 +1,51 @@
-# Yapılacaklar ✓ (v2.0.2)
+# To-Do Magic ✨ (v3.0.0)
 
 **Adres:** https://yapilacaklarim.vercel.app
 
-Telefonuna kurulan, **hesapsız ve sunucusuz** yapılacaklar listesi. Tüm veriler cihazın tarayıcı depolamasında (`localStorage`) durur; hiçbir yere gönderilmez.
+Söyle, o yazsın. Telefonuna kurulan, **hesapsız ve sunucusuz** yapılacaklar + alışveriş listesi. Tüm veriler cihazın tarayıcı depolamasında (`localStorage`) durur.
 
 ## Özellikler
 
-- Görev ekle, düzenle (metne dokun), tamamla, sil (5 sn **Geri al**)
-- Öncelik (Yüksek / Orta / Düşük) ve son tarih (Bugün / Yarın / Haftaya / takvim)
-- Kategoriler ve filtre çubuğu
-- Sesle ekleme (tarayıcı destekliyorsa, Türkçe)
-- Offline çalışır, ana ekrana kurulabilir (PWA)
-- Açık / koyu tema (cihaz ayarını izler)
-- **Yedek al / geri yükle** (⋮ menüsü → JSON dosyası)
+- **Büyük mikrofon:** "yarın saat 4'te Beril ile önemli toplantı" de → tarih **yarın 16:00**, öncelik **Yüksek** otomatik dolar. Anlaşılan kelimeler renkli işaretlenir; yanlışsa etikete dokunup düzeltirsin.
+- **Google Takvim'e ekle:** Tarihli görev eklenince takvim, bilgiler dolu açılır; Kaydet'e basarsın, uyarıyı takvim yapar. Giriş/izin yok.
+- **Alışveriş sekmesi:** Çizgili defter kağıdı. "süt, yumurta ve ekmek" de → 3 ayrı ürün.
+- Tamamlamak için halkaya dokun (üstü çizilir); **silmek için sola kaydır**; 10 saniye içinde **Geri al**.
+- Bölümler: Gecikmiş · Bugün · Yaklaşan · Tarihsiz · Tamamlanan. Renkli kategoriler.
+- ⋮ menüsü: Uygulamayı yükle, Yedeği indir / geri yükle, Tamamlananları temizle.
+- Offline çalışır (PWA), Android geri tuşu açık paneli kapatır.
+
+### Cümle anlama (kural tabanlı, internetsiz)
+
+Anlar: `bugün`, `yarın`, `öbür gün`, `haftaya`, gün adları (`cuma`, `haftaya pazartesi`), `15 kasım`, `ayın 20'si`, `3 gün sonra`, `saat 4`, `saat dörtte`, `4'te`, `14:30`, `3 buçuk`, `sabah 9`, `akşam 7`, `öğlen`, `önemli`/`acil` (yüksek öncelik), mevcut kategori adları.
+Saat ipucusuz 1–7 öğleden sonra sayılır (`saat 4` → 16:00). Sadece saat söylenirse: geçmediyse bugün, geçtiyse yarın.
 
 ## Stack
 
-Vite 5 · React 18 · TypeScript · `vite-plugin-pwa` (Workbox). Backend, veritabanı, giriş yok.
+Vite 6 · React 18 · TypeScript · `vite-plugin-pwa`. Backend, veritabanı, giriş yok. Yapay zeka yok (cümle anlama `src/parse.ts`).
 
 ## Geliştirme
 
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm run build    # dist/ klasörüne üretim çıktısı
-npm run preview  # build'i yerelde test et
+npm test         # cümle çözümleyici testleri (Node 22.6+)
+npm run build    # test + tip kontrolü + dist/
 ```
 
 ## Vercel'e Deploy
 
-Ortam değişkeni (env var) **gerekmiyor** — uygulamanın sunucu tarafı yok.
+Ortam değişkeni (env var) **gerekmiyor**. Proje Vercel'e bağlı; `main`'e her push otomatik yayına çıkar. Preview deploy'lar kapalı.
 
-1. [vercel.com/new](https://vercel.com/new) → GitHub ile giriş → **Import** → `tuceal/todo` reposunu seç.
-2. Ayarlar otomatik gelir (`vercel.json` içinde tanımlı): Framework **Vite**, Build `npm run build`, Output `dist`. Hiçbir şeyi değiştirme, **Deploy**'a bas.
-3. 1 dakika sonra `https://<proje-adı>.vercel.app` adresin hazır. Bundan sonra `main`'e her push otomatik deploy olur; PR'lar için ayrı önizleme linki gelir.
+Sıfırdan kurulum: [vercel.com/new](https://vercel.com/new) → `tuceal/todo` → Import → Deploy (ayarlar `vercel.json`'da).
 
 ### Telefona kurulum
 
-- **Android (Chrome):** Adresi aç → uygulamadaki ⋮ menüsü → **Uygulamayı yükle**. (Görünmüyorsa Chrome'un kendi ⋮ menüsü → **Uygulamayı yükle** / **Ana ekrana ekle**.) Yüklenince uygulama çekmecesinde ayrı bir uygulama gibi durur.
-- **iPhone (Safari):** Adresi aç → Paylaş → **Ana Ekrana Ekle**.
+- **Android (Chrome):** Adresi aç → ⋮ → **Uygulamayı yükle**. Uygulama çekmecesinde sihirli değnek ikonuyla durur.
+- **iPhone (Safari):** Paylaş → **Ana Ekrana Ekle**.
 
 ### Bilmen gerekenler
 
-- **Veri sadece o cihazda ve o tarayıcıda.** Android'de yüklenen uygulama Chrome ile aynı depolamayı paylaşır; Chrome'da "site verilerini temizle" dersen liste de silinir. (iPhone'da Safari sekmesi ile ana ekran uygulamasının depolaması ayrıdır.)
-- Android geri tuşu açık menüyü / seçiciyi kapatır; hiçbir şey açık değilken uygulamadan çıkar.
-- Ana ekrandaki uygulamayı silersen ya da tarayıcı verilerini temizlersen **liste de silinir**. Arada bir ⋮ → **Yedeği indir** yap.
-- Vercel adresi (domain) değişirse eski adresteki veriler yeni adreste görünmez. Eski adresler (`yapilacaklar-bay`, `yapilacaklar-tuci`) açıldığında uygulama veriyi alıp otomatik olarak yeni adrese taşır; başka bir adres değişikliğinde `src/main.tsx` içindeki listeye eklenmeli.
-- Preview deploy'lar kapalı: sadece `main` dalı yayına çıkar, tek adres vardır.
-- Yeni sürüm deploy edildiğinde uygulama bir sonraki açılışta kendini günceller (service worker `autoUpdate`).
+- **Veri sadece o cihazda.** Chrome'da "site verilerini temizle" dersen liste silinir. Arada bir ⋮ → **Yedeği indir**.
+- **Ses tanıma:** Android Chrome'da sesi Google'ın sunucusu yazıya çevirir (tarayıcı özelliği). Metin ve görevler cihazda kalır.
+- Eski adresler (`yapilacaklar-bay`, `yapilacaklar-tuci`) açılırsa veri otomatik yeni adrese taşınır (`src/main.tsx`).
 - Vercel Hobby (ücretsiz) planı kişisel, ticari olmayan kullanım içindir.
