@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { addDays, daysFromToday, formatDue } from "../dates";
 import type { Priority, Todo } from "../store";
+import { useBackClose } from "../useBackClose";
 
 const PRIORITY_LABEL: Record<Priority, string> = { high: "Yüksek", medium: "Orta", low: "Düşük" };
 
@@ -22,6 +23,7 @@ export function TodoItem({ todo, showCategory, onToggle, onEdit, onRemove, onDue
   // Tek seferde tek seçici açık: öncelik ya da tarih
   const [picker, setPicker] = useState<"prio" | "due" | null>(null);
   const toggle = (which: "prio" | "due") => setPicker((p) => (p === which ? null : which));
+  useBackClose(picker !== null, () => setPicker(null));
 
   const saveEdit = () => {
     if (!cancelled.current && draft.trim() && draft !== todo.text) onEdit(draft);
