@@ -1,15 +1,16 @@
 {
-  "name": "yapilacaklar",
+  "name": "to-do-magic",
   "private": true,
-  "version": "2.0.2",
+  "version": "3.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "build": "npm test && tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "node --experimental-strip-types --no-warnings --test src/parse.test.ts"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.6"
   },
   "dependencies": {
     "react": "^18.3.1",

@@ -1,5 +1,48 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#f5f0e8"/>
-  <circle cx="256" cy="256" r="150" fill="none" stroke="#c8a96e" stroke-width="28"/>
-  <path d="M190 260l46 46 90-100" fill="none" stroke="#a07840" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+  <defs>
+    <radialGradient id="bg" cx="35%" cy="28%" r="85%">
+      <stop offset="0" stop-color="#FFE9DA"/>
+      <stop offset="0.6" stop-color="#FFD3B8"/>
+      <stop offset="1" stop-color="#F9B994"/>
+    </radialGradient>
+    <linearGradient id="stick" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5A524E"/>
+      <stop offset="0.28" stop-color="#2A2523"/>
+      <stop offset="0.7" stop-color="#0E0C0B"/>
+      <stop offset="1" stop-color="#000"/>
+    </linearGradient>
+    <linearGradient id="tip" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.6" stop-color="#F1ECE8"/>
+      <stop offset="1" stop-color="#CFC6C0"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#FFF6D6" stop-opacity="0.95"/>
+      <stop offset="0.45" stop-color="#FFE08A" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#FFD36B" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="star" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFF4C2"/>
+      <stop offset="1" stop-color="#F6B73C"/>
+    </linearGradient>
+    <filter id="shadow" x="-40%" y="-200%" width="180%" height="500%">
+      <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#8A3A12" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g transform="translate(256 256) scale(0.86) translate(-256 -256)">
+  <circle cx="400" cy="112" r="120" fill="url(#glow)"/>
+  <g filter="url(#shadow)" transform="rotate(-45 256 256)">
+    <rect x="70" y="236" width="312" height="40" rx="20" fill="url(#stick)"/>
+    <rect x="96" y="243" width="250" height="7" rx="3.5" fill="#FFFFFF" opacity="0.22"/>
+    <rect x="352" y="236" width="86" height="40" rx="20" fill="url(#tip)"/>
+    <rect x="352" y="236" width="20" height="40" fill="url(#tip)"/>
+    <rect x="364" y="243" width="60" height="6" rx="3" fill="#FFFFFF" opacity="0.9"/>
+  </g>
+  <path d="M412 44 L424 88 L468 100 L424 112 L412 156 L400 112 L356 100 L400 88 Z" fill="url(#star)"/>
+  <path d="M432 236 L439 260 L463 267 L439 274 L432 298 L425 274 L401 267 L425 260 Z" fill="url(#star)"/>
+  <path d="M300 92 L305 108 L321 113 L305 118 L300 134 L295 118 L279 113 L295 108 Z" fill="url(#star)" opacity="0.85"/>
+  <circle cx="470" cy="160" r="6" fill="#FFF4C2"/>
+  <circle cx="300" cy="250" r="4" fill="#FFF4C2" opacity="0.9"/>
+  </g>
 </svg>

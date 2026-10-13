@@ -10,14 +10,29 @@ export interface Todo {
   category?: string;
   /** Yerel tarih, YYYY-MM-DD */
   dueDate?: string;
+  /** Yerel saat, HH:MM (sadece dueDate varken anlamlı) */
+  time?: string;
   priority?: Priority;
+  /** Kullanıcı "Takvime ekle"ye bastı */
+  inCalendar?: boolean;
+}
+
+export interface ShopItem {
+  id: string;
+  text: string;
+  done: boolean;
+  createdAt: number;
 }
 
 export interface Data {
   todos: Todo[];
   categories: string[];
+  shopping: ShopItem[];
 }
 
+export type TodoFields = Pick<Todo, "text" | "category" | "dueDate" | "time" | "priority">;
+
+// v3 aynı anahtarı kullanır; yeni alanlar (time, shopping…) eski kayıtlara zararsızca eklenir
 export const STORAGE_KEY = "yapilacaklar:v2";
 /** Eski adresten yeni adrese taşınırken veri bu hash ile gelir */
 export const TRANSFER_HASH = "#tasi=";
@@ -26,90 +41,123 @@ const LEGACY_TODOS_KEY = "@yapilacaklar_todos_v2";
 const LEGACY_CATS_KEY = "@yapilacaklar_categories";
 
 type Action =
-  | { type: "add"; text: string; category?: string }
+  | { type: "add"; todo: Todo }
+  | { type: "update"; id: string; fields: Partial<Todo> }
   | { type: "toggle"; id: string }
-  | { type: "edit"; id: string; text: string }
   | { type: "remove"; id: string }
   | { type: "restore"; todo: Todo; index: number }
-  | { type: "due"; id: string; dueDate?: string }
-  | { type: "priority"; id: string; priority?: Priority }
   | { type: "clearDone" }
   | { type: "addCategory"; name: string }
   | { type: "removeCategory"; name: string }
+  | { type: "shopAdd"; texts: string[] }
+  | { type: "shopToggle"; id: string }
+  | { type: "shopRemove"; id: string }
+  | { type: "shopRestore"; item: ShopItem; index: number }
+  | { type: "shopClearDone" }
   | { type: "replace"; data: Data };
 
-function genId() {
+export function genId() {
   return crypto.randomUUID?.() ?? Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
-function patch(todos: Todo[], id: string, change: Partial<Todo>) {
-  return todos.map((t) => (t.id === id ? { ...t, ...change } : t));
+function insertAt<T>(list: T[], item: T, index: number) {
+  const next = [...list];
+  next.splice(Math.min(index, next.length), 0, item);
+  return next;
 }
 
 function reducer(state: Data, a: Action): Data {
   switch (a.type) {
-    case "add": {
-      const text = a.text.trim();
-      if (!text) return state;
-      const todo: Todo = { id: genId(), text, done: false, createdAt: Date.now(), category: a.category };
-      return { ...state, todos: [todo, ...state.todos] };
-    }
-    case "toggle": {
-      const t = state.todos.find((x) => x.id === a.id);
-      return t ? { ...state, todos: patch(state.todos, a.id, { done: !t.done }) } : state;
-    }
-    case "edit": {
-      const text = a.text.trim();
-      return text ? { ...state, todos: patch(state.todos, a.id, { text }) } : state;
-    }
+    case "add":
+      return a.todo.text ? { ...state, todos: [a.todo, ...state.todos] } : state;
+    case "update":
+      return {
+        ...state,
+        todos: state.todos.map((t) => {
+          if (t.id !== a.id) return t;
+          const next = { ...t, ...a.fields };
+          next.text = next.text.trim() || t.text;
+          if (!next.dueDate) delete next.time;
+          // Tarih/saat değiştiyse eski takvim kaydı artık geçerli değil
+          if (next.dueDate !== t.dueDate || next.time !== t.time) delete next.inCalendar;
+          return next;
+        }),
+      };
+    case "toggle":
+      return { ...state, todos: state.todos.map((t) => (t.id === a.id ? { ...t, done: !t.done } : t)) };
     case "remove":
       return { ...state, todos: state.todos.filter((t) => t.id !== a.id) };
-    case "restore": {
-      const todos = [...state.todos];
-      todos.splice(Math.min(a.index, todos.length), 0, a.todo);
-      return { ...state, todos };
-    }
-    case "due":
-      return { ...state, todos: patch(state.todos, a.id, { dueDate: a.dueDate }) };
-    case "priority":
-      return { ...state, todos: patch(state.todos, a.id, { priority: a.priority }) };
+    case "restore":
+      return { ...state, todos: insertAt(state.todos, a.todo, a.index) };
     case "clearDone":
       return { ...state, todos: state.todos.filter((t) => !t.done) };
     case "addCategory": {
       const name = a.name.trim();
-      if (!name || state.categories.includes(name)) return state;
+      if (!name || state.categories.some((c) => c.toLocaleLowerCase("tr") === name.toLocaleLowerCase("tr"))) return state;
       return { ...state, categories: [...state.categories, name] };
     }
     case "removeCategory":
       return {
+        ...state,
         categories: state.categories.filter((c) => c !== a.name),
         todos: state.todos.map((t) => (t.category === a.name ? { ...t, category: undefined } : t)),
       };
+    case "shopAdd": {
+      const now = Date.now();
+      const items = a.texts
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .map((text, i) => ({ id: genId(), text, done: false, createdAt: now + i }));
+      return items.length ? { ...state, shopping: [...state.shopping, ...items] } : state;
+    }
+    case "shopToggle":
+      return { ...state, shopping: state.shopping.map((s) => (s.id === a.id ? { ...s, done: !s.done } : s)) };
+    case "shopRemove":
+      return { ...state, shopping: state.shopping.filter((s) => s.id !== a.id) };
+    case "shopRestore":
+      return { ...state, shopping: insertAt(state.shopping, a.item, a.index) };
+    case "shopClearDone":
+      return { ...state, shopping: state.shopping.filter((s) => !s.done) };
     case "replace":
       return a.data;
   }
 }
 
+export function makeTodo(fields: TodoFields): Todo {
+  const todo: Todo = { ...fields, text: fields.text.trim(), id: genId(), done: false, createdAt: Date.now() };
+  if (!todo.dueDate) delete todo.time;
+  for (const k of Object.keys(todo) as (keyof Todo)[]) if (todo[k] === undefined) delete todo[k];
+  return todo;
+}
+
+const isStr = (v: unknown): v is string => typeof v === "string";
+
 /** Dışarıdan gelen (yedek dosyası, eski sürüm) veriyi doğrular; bozuk kayıtları atar. */
 export function sanitize(raw: unknown): Data {
-  const obj = (raw ?? {}) as Partial<Record<keyof Data, unknown>>;
-  const todos = Array.isArray(obj.todos) ? obj.todos : [];
-  const categories = Array.isArray(obj.categories) ? obj.categories : [];
+  const obj = (raw ?? {}) as Record<string, unknown>;
+  const list = (v: unknown) => (Array.isArray(v) ? (v as Record<string, unknown>[]) : []);
   return {
-    categories: [...new Set(categories.filter((c): c is string => typeof c === "string" && c.trim() !== ""))],
-    todos: todos
-      .filter((t): t is Todo => !!t && typeof t.id === "string" && typeof t.text === "string")
+    categories: [...new Set((Array.isArray(obj.categories) ? obj.categories : []).filter((c): c is string => isStr(c) && c.trim() !== ""))],
+    todos: list(obj.todos)
+      .filter((t) => t && isStr(t.id) && isStr(t.text))
       .map((t) => ({
-        id: t.id,
-        text: t.text,
+        id: t.id as string,
+        text: t.text as string,
         done: !!t.done,
         createdAt: Number(t.createdAt) || Date.now(),
-        category: typeof t.category === "string" ? t.category : undefined,
-        dueDate: typeof t.dueDate === "string" ? t.dueDate.slice(0, 10) : undefined,
-        priority: ["high", "medium", "low"].includes(t.priority as string) ? t.priority : undefined,
+        category: isStr(t.category) ? t.category : undefined,
+        dueDate: isStr(t.dueDate) ? t.dueDate.slice(0, 10) : undefined,
+        time: isStr(t.time) && /^\d{2}:\d{2}$/.test(t.time) ? t.time : undefined,
+        priority: ["high", "medium", "low"].includes(t.priority as string) ? (t.priority as Priority) : undefined,
+        inCalendar: t.inCalendar === true || undefined,
       })),
+    shopping: list(obj.shopping)
+      .filter((s) => s && isStr(s.id) && isStr(s.text))
+      .map((s) => ({ id: s.id as string, text: s.text as string, done: !!s.done, createdAt: Number(s.createdAt) || Date.now() })),
   };
 }
+
+const isEmpty = (d: Data) => d.todos.length === 0 && d.shopping.length === 0;
 
 /** Eski adresten gelen veriyi al; bu cihazda zaten liste varsa ona dokunma. */
 function takeTransfer(): Data | null {
@@ -119,7 +167,7 @@ function takeTransfer(): Data | null {
   try {
     const incoming = sanitize(JSON.parse(raw));
     const current = localStorage.getItem(STORAGE_KEY);
-    if (current && sanitize(JSON.parse(current)).todos.length > 0) return null;
+    if (current && !isEmpty(sanitize(JSON.parse(current)))) return null;
     return incoming;
   } catch {
     return null;
@@ -144,7 +192,7 @@ function load(): Data {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) localStorage.setItem(`${STORAGE_KEY}:corrupt:${Date.now()}`, raw);
   }
-  return { todos: [], categories: [] };
+  return { todos: [], categories: [], shopping: [] };
 }
 
 export function useTodoStore() {
@@ -159,18 +207,18 @@ export function useTodoStore() {
   }, [data]);
 
   useEffect(() => {
-    // Tarayıcıdan verinin kendiliğinden silinmemesini iste (Safari/Chrome izin verirse)
+    // Tarayıcıdan verinin kendiliğinden silinmemesini iste
     navigator.storage?.persist?.().catch(() => {});
   }, []);
 
   const exportBackup = useCallback(() => {
-    const blob = new Blob([JSON.stringify({ app: "yapilacaklar", version: 2, ...data }, null, 2)], {
+    const blob = new Blob([JSON.stringify({ app: "to-do-magic", version: 3, ...data }, null, 2)], {
       type: "application/json",
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `yapilacaklar-yedek-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `to-do-magic-yedek-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }, [data]);
