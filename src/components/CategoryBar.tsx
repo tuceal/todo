@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 interface Props {
   categories: string[];
@@ -12,12 +12,14 @@ interface Props {
 export function CategoryBar({ categories, active, counts, onSelect, onAdd, onRemove }: Props) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
+  const cancelled = useRef(false);
 
   const commit = () => {
-    if (name.trim()) {
+    if (!cancelled.current && name.trim()) {
       onAdd(name);
       onSelect(name.trim());
     }
+    cancelled.current = false;
     setName("");
     setAdding(false);
   };
@@ -55,11 +57,8 @@ export function CategoryBar({ categories, active, counts, onSelect, onAdd, onRem
           onChange={(e) => setName(e.target.value)}
           onBlur={commit}
           onKeyDown={(e) => {
-            if (e.key === "Enter") commit();
-            if (e.key === "Escape") {
-              setName("");
-              setAdding(false);
-            }
+            if (e.key === "Escape") cancelled.current = true;
+            if (e.key === "Enter" || e.key === "Escape") e.currentTarget.blur();
           }}
         />
       ) : (

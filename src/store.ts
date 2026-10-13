@@ -18,7 +18,9 @@ export interface Data {
   categories: string[];
 }
 
-const STORAGE_KEY = "yapilacaklar:v2";
+export const STORAGE_KEY = "yapilacaklar:v2";
+/** Eski adresten yeni adrese taşınırken veri bu hash ile gelir */
+export const TRANSFER_HASH = "#tasi=";
 // Eski Expo web sürümünün AsyncStorage anahtarları (aynı adreste açılırsa bir kez içe alınır)
 const LEGACY_TODOS_KEY = "@yapilacaklar_todos_v2";
 const LEGACY_CATS_KEY = "@yapilacaklar_categories";
@@ -109,7 +111,24 @@ export function sanitize(raw: unknown): Data {
   };
 }
 
+/** Eski adresten gelen veriyi al; bu cihazda zaten liste varsa ona dokunma. */
+function takeTransfer(): Data | null {
+  if (!location.hash.startsWith(TRANSFER_HASH)) return null;
+  const raw = decodeURIComponent(location.hash.slice(TRANSFER_HASH.length));
+  history.replaceState(null, "", location.pathname + location.search);
+  try {
+    const incoming = sanitize(JSON.parse(raw));
+    const current = localStorage.getItem(STORAGE_KEY);
+    if (current && sanitize(JSON.parse(current)).todos.length > 0) return null;
+    return incoming;
+  } catch {
+    return null;
+  }
+}
+
 function load(): Data {
+  const transferred = takeTransfer();
+  if (transferred) return transferred;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return sanitize(JSON.parse(raw));

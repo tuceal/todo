@@ -1,4 +1,6 @@
-# Yapılacaklar ✓ (v2.0)
+# Yapılacaklar ✓ (v2.0.1)
+
+**Adres:** https://yapilacaklarim.vercel.app
 
 Telefonuna kurulan, **hesapsız ve sunucusuz** yapılacaklar listesi. Tüm veriler cihazın tarayıcı depolamasında (`localStorage`) durur; hiçbir yere gönderilmez.
 
@@ -42,6 +44,7 @@ Ortam değişkeni (env var) **gerekmiyor** — uygulamanın sunucu tarafı yok.
 
 - **Veri sadece o cihazda ve o tarayıcıda.** iPhone'da Safari sekmesi ile ana ekrana eklenen uygulama **ayrı depolama** kullanır — uygulamayı ana ekrandan kullan.
 - Ana ekrandaki uygulamayı silersen ya da tarayıcı verilerini temizlersen **liste de silinir**. Arada bir ⋮ → **Yedeği indir** yap.
-- Vercel adresi (domain) değişirse eski adresteki veriler yeni adreste görünmez → eski adreste yedek al, yenisinde geri yükle.
+- Vercel adresi (domain) değişirse eski adresteki veriler yeni adreste görünmez. Eski adresler (`yapilacaklar-bay`, `yapilacaklar-tuci`) açıldığında uygulama veriyi alıp otomatik olarak yeni adrese taşır; başka bir adres değişikliğinde `src/main.tsx` içindeki listeye eklenmeli.
+- Preview deploy'lar kapalı: sadece `main` dalı yayına çıkar, tek adres vardır.
 - Yeni sürüm deploy edildiğinde uygulama bir sonraki açılışta kendini günceller (service worker `autoUpdate`).
 - Vercel Hobby (ücretsiz) planı kişisel, ticari olmayan kullanım içindir.

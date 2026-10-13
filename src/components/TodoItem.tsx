@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { addDays, daysFromToday, formatDue } from "../dates";
 import type { Priority, Todo } from "../store";
 
@@ -17,13 +17,16 @@ interface Props {
 export function TodoItem({ todo, showCategory, onToggle, onEdit, onRemove, onDue, onPriority }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(todo.text);
+  // Escape'e basınca input kapanırken blur tetiklenir; bu bayrak kaydı engeller
+  const cancelled = useRef(false);
   // Tek seferde tek seçici açık: öncelik ya da tarih
   const [picker, setPicker] = useState<"prio" | "due" | null>(null);
   const toggle = (which: "prio" | "due") => setPicker((p) => (p === which ? null : which));
 
   const saveEdit = () => {
-    if (draft.trim() && draft !== todo.text) onEdit(draft);
+    if (!cancelled.current && draft.trim() && draft !== todo.text) onEdit(draft);
     else setDraft(todo.text);
+    cancelled.current = false;
     setEditing(false);
   };
 
@@ -61,11 +64,8 @@ export function TodoItem({ todo, showCategory, onToggle, onEdit, onRemove, onDue
               onChange={(e) => setDraft(e.target.value)}
               onBlur={saveEdit}
               onKeyDown={(e) => {
-                if (e.key === "Enter") saveEdit();
-                if (e.key === "Escape") {
-                  setDraft(todo.text);
-                  setEditing(false);
-                }
+                if (e.key === "Escape") cancelled.current = true;
+                if (e.key === "Enter" || e.key === "Escape") e.currentTarget.blur();
               }}
             />
           ) : (
@@ -89,7 +89,7 @@ export function TodoItem({ todo, showCategory, onToggle, onEdit, onRemove, onDue
               <span className="dot" />
               {todo.priority ? PRIORITY_LABEL[todo.priority] : "Öncelik"}
             </button>
-            <button className={`pill due${overdue ? " overdue" : ""}`} onClick={() => toggle("due")} aria-expanded={picker === "due"}>
+            <button className={`pill due${todo.dueDate ? " set" : ""}${overdue ? " overdue" : ""}`} onClick={() => toggle("due")} aria-expanded={picker === "due"}>
               {todo.dueDate ? formatDue(todo.dueDate) : "Tarih"}
             </button>
             {showCategory && todo.category && <span className="pill cat">{todo.category}</span>}
@@ -118,7 +118,7 @@ export function TodoItem({ todo, showCategory, onToggle, onEdit, onRemove, onDue
                 type="date"
                 aria-label="Tarih seç"
                 value={todo.dueDate ?? ""}
-                onChange={(e) => pickDue(e.target.value || undefined)}
+                onChange={(e) => onDue(e.target.value || undefined)}
               />
               {todo.dueDate && (
                 <button className="danger" onClick={() => pickDue(undefined)}>
