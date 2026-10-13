@@ -17,6 +17,8 @@ function dueTone(t: Todo) {
 
 interface Props {
   todo: Todo;
+  /** Az önce tamamlandı: üstü çizilme animasyonu */
+  justDone?: boolean;
   categories: string[];
   showCategory: boolean;
   onToggle: () => void;
@@ -24,12 +26,12 @@ interface Props {
   onDelete: () => void;
 }
 
-export function TaskCard({ todo, categories, showCategory, onToggle, onOpen, onDelete }: Props) {
+export function TaskCard({ todo, justDone, categories, showCategory, onToggle, onOpen, onDelete }: Props) {
   const CatIcon = todo.category ? categoryIcon(todo.category) : null;
   const cat = todo.category ? categoryColor(todo.category, categories) : null;
   return (
     <SwipeRow onDelete={onDelete}>
-      <div className={`card${todo.done ? " done" : ""}`}>
+      <div className={`card${todo.done ? " done" : ""}${justDone ? " just-done" : ""}`}>
         <button
           className={`ring prio-${todo.priority ?? "none"}${todo.done ? " checked" : ""}`}
           onClick={onToggle}
@@ -39,7 +41,7 @@ export function TaskCard({ todo, categories, showCategory, onToggle, onOpen, onD
         </button>
         <button className="card-body" onClick={onOpen} aria-label={`${todo.text}, düzenle`}>
           <span className="card-title">{todo.text}</span>
-          {!todo.done && (todo.dueDate || todo.priority || (showCategory && todo.category)) && (
+          {(!todo.done || justDone) && (todo.dueDate || todo.priority || (showCategory && todo.category)) && (
             <span className="meta">
               {todo.dueDate && (
                 <span className={`meta-item tone-${dueTone(todo)}`}>

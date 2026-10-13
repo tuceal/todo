@@ -1,4 +1,4 @@
-# To-Do Magic ✨ (v3.0.0)
+# To-Do Magic ✨ (v3.0.1)
 
 **Adres:** https://yapilacaklarim.vercel.app
 

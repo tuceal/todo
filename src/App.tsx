@@ -12,6 +12,8 @@ import { useInstallPrompt } from "./useInstallPrompt";
 
 const PRIORITY_WEIGHT: Record<string, number> = { high: 3, medium: 2, low: 1 };
 const UNDO_MS = 10_000;
+// Tamamlanan görev, üstü çizili haliyle bu kadar yerinde kalır, sonra "Tamamlanan"a iner
+const LINGER_MS = 1800;
 
 function compare(a: Todo, b: Todo) {
   if ((a.dueDate ?? "") !== (b.dueDate ?? "")) return (a.dueDate ?? "9999") < (b.dueDate ?? "9999") ? -1 : 1;
@@ -32,6 +34,7 @@ export function App() {
   const [added, setAdded] = useState<Todo | null>(null);
   const [undo, setUndo] = useState<Undo | null>(null);
   const [showDone, setShowDone] = useState(false);
+  const [lingering, setLingering] = useState<Record<string, true>>({});
   const fileRef = useRef<HTMLInputElement>(null);
   const install = useInstallPrompt();
   useBackClose(menuOpen, () => setMenuOpen(false));
@@ -48,16 +51,16 @@ export function App() {
 
   const scoped = useMemo(() => (filter ? data.todos.filter((t) => t.category === filter) : data.todos), [data.todos, filter]);
   const sections = useMemo(() => {
-    const open = scoped.filter((t) => !t.done).sort(compare);
+    const open = scoped.filter((t) => !t.done || lingering[t.id]).sort(compare);
     const by = (fn: (t: Todo) => boolean) => open.filter(fn);
     return {
       overdue: by((t) => !!t.dueDate && daysFromToday(t.dueDate) < 0),
       today: by((t) => !!t.dueDate && daysFromToday(t.dueDate) === 0),
       upcoming: by((t) => !!t.dueDate && daysFromToday(t.dueDate) > 0),
       someday: by((t) => !t.dueDate),
-      done: scoped.filter((t) => t.done).sort((a, b) => b.createdAt - a.createdAt),
+      done: scoped.filter((t) => t.done && !lingering[t.id]).sort((a, b) => b.createdAt - a.createdAt),
     };
-  }, [scoped]);
+  }, [scoped, lingering]);
   const doneCount = sections.done.length;
   const total = scoped.length;
   const counts = useMemo(() => {
@@ -65,6 +68,13 @@ export function App() {
     for (const t of data.todos) if (t.category && !t.done) c[t.category] = (c[t.category] ?? 0) + 1;
     return c;
   }, [data.todos]);
+
+  const toggleTodo = (todo: Todo) => {
+    dispatch({ type: "toggle", id: todo.id });
+    if (todo.done) return;
+    setLingering((l) => ({ ...l, [todo.id]: true }));
+    setTimeout(() => setLingering(({ [todo.id]: _, ...rest }) => rest), LINGER_MS);
+  };
 
   const removeTodo = (todo: Todo) => {
     const index = data.todos.findIndex((t) => t.id === todo.id);
@@ -119,10 +129,11 @@ export function App() {
   const card = (t: Todo) => (
     <TaskCard
       key={t.id}
+      justDone={!!lingering[t.id]}
       todo={t}
       categories={data.categories}
       showCategory={!filter}
-      onToggle={() => dispatch({ type: "toggle", id: t.id })}
+      onToggle={() => toggleTodo(t)}
       onOpen={() => setCompose({ variant: "task", initial: t, listen: false })}
       onDelete={() => removeTodo(t)}
     />
@@ -220,7 +231,7 @@ export function App() {
       <main>
         {tab === "tasks" ? (
           <>
-            {total === sections.done.length && (
+            {total === sections.done.length && Object.keys(lingering).length === 0 && (
               <div className="empty">
                 <WandIcon size={40} />
                 <p>{total ? "Hepsi bitti, sihir gibi!" : "Henüz görev yok."}</p>
