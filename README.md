@@ -1,27 +1,47 @@
-# Yapılacaklar ✓
+# Yapılacaklar ✓ (v2.0)
 
-A cross-platform to-do app built with Expo (iOS · Android · Web). Sign in with Google to sync your tasks across all devices — or use it offline with no account required.
+Telefonuna kurulan, **hesapsız ve sunucusuz** yapılacaklar listesi. Tüm veriler cihazın tarayıcı depolamasında (`localStorage`) durur; hiçbir yere gönderilmez.
 
-## Features
+## Özellikler
 
-- **Cloud sync** — tasks and categories stored in PostgreSQL, synced in real time
-- **Offline-first** — works without an account using local AsyncStorage
-- **Auto-migration** — existing local tasks are uploaded to the cloud on first sign-in
-- **Google SSO** — one-tap sign-in via Clerk (Apple on iOS)
-- **Categories** — organise tasks into custom groups with a filter bar
-- **Priority & due dates** — mark tasks high / medium / low, add deadlines
-- **Web PWA** — installable from the browser, works on desktop too
+- Görev ekle, düzenle (metne dokun), tamamla, sil (5 sn **Geri al**)
+- Öncelik (Yüksek / Orta / Düşük) ve son tarih (Bugün / Yarın / Haftaya / takvim)
+- Kategoriler ve filtre çubuğu
+- Sesle ekleme (tarayıcı destekliyorsa, Türkçe)
+- Offline çalışır, ana ekrana kurulabilir (PWA)
+- Açık / koyu tema (cihaz ayarını izler)
+- **Yedek al / geri yükle** (⋮ menüsü → JSON dosyası)
 
 ## Stack
 
-| Layer | Tech |
-|-------|------|
-| Mobile / Web | Expo 54, React Native, React Native Web |
-| Routing | Expo Router (file-based) |
-| Auth | Clerk (`@clerk/expo`) |
-| Backend | Express 5, Node.js 24 |
-| Database | PostgreSQL + Drizzle ORM |
-| Monorepo | pnpm workspaces |
-| Language | TypeScript 5.9 |
+Vite 5 · React 18 · TypeScript · `vite-plugin-pwa` (Workbox). Backend, veritabanı, giriş yok.
 
-## Project Structure
+## Geliştirme
+
+```bash
+npm install
+npm run dev      # http://localhost:5173
+npm run build    # dist/ klasörüne üretim çıktısı
+npm run preview  # build'i yerelde test et
+```
+
+## Vercel'e Deploy
+
+Ortam değişkeni (env var) **gerekmiyor** — uygulamanın sunucu tarafı yok.
+
+1. [vercel.com/new](https://vercel.com/new) → GitHub ile giriş → **Import** → `tuceal/todo` reposunu seç.
+2. Ayarlar otomatik gelir (`vercel.json` içinde tanımlı): Framework **Vite**, Build `npm run build`, Output `dist`. Hiçbir şeyi değiştirme, **Deploy**'a bas.
+3. 1 dakika sonra `https://<proje-adı>.vercel.app` adresin hazır. Bundan sonra `main`'e her push otomatik deploy olur; PR'lar için ayrı önizleme linki gelir.
+
+### Telefona kurulum
+
+- **iPhone (Safari):** Adresi aç → Paylaş → **Ana Ekrana Ekle**.
+- **Android (Chrome):** Adresi aç → ⋮ → **Uygulamayı yükle** / **Ana ekrana ekle**.
+
+### Bilmen gerekenler
+
+- **Veri sadece o cihazda ve o tarayıcıda.** iPhone'da Safari sekmesi ile ana ekrana eklenen uygulama **ayrı depolama** kullanır — uygulamayı ana ekrandan kullan.
+- Ana ekrandaki uygulamayı silersen ya da tarayıcı verilerini temizlersen **liste de silinir**. Arada bir ⋮ → **Yedeği indir** yap.
+- Vercel adresi (domain) değişirse eski adresteki veriler yeni adreste görünmez → eski adreste yedek al, yenisinde geri yükle.
+- Yeni sürüm deploy edildiğinde uygulama bir sonraki açılışta kendini günceller (service worker `autoUpdate`).
+- Vercel Hobby (ücretsiz) planı kişisel, ticari olmayan kullanım içindir.
