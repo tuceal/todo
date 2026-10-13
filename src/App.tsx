@@ -88,6 +88,7 @@ export function App() {
                 <circle cx="12" cy="19" r="1.5" />
               </svg>
             </button>
+            {menuOpen && <div className="backdrop" onClick={() => setMenuOpen(false)} />}
             {menuOpen && (
               <div className="menu" role="menu">
                 <button

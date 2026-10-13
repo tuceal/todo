@@ -7,6 +7,8 @@
   --soft: #ede5d8;
   --gold: #c8a96e;
   --gold-dark: #a07840;
+  --accent: #9a7238;
+  --on-accent: #ffffff;
   --danger: #dc503c;
   --prio-high: #dc503c;
   --prio-medium: #e0a030;
@@ -27,6 +29,8 @@
     --soft: #2b261d;
     --gold: #d4b67c;
     --gold-dark: #e2c58c;
+    --accent: #d4b67c;
+    --on-accent: #17140f;
     color-scheme: dark;
   }
 }
@@ -68,6 +72,7 @@ h1 { font: 700 38px/1.15 var(--serif); letter-spacing: -1px; margin: 0; }
 .icon-btn circle { fill: currentColor; stroke: none; }
 
 .menu-wrap { position: relative; }
+.backdrop { position: fixed; inset: 0; z-index: 9; }
 .menu {
   position: absolute; right: 0; top: 44px; z-index: 10; width: 240px;
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
@@ -85,12 +90,12 @@ h1 { font: 700 38px/1.15 var(--serif); letter-spacing: -1px; margin: 0; }
   height: 34px; padding: 0 14px; border-radius: 17px;
   background: var(--soft); font-size: 14px;
 }
-.chip.active { background: var(--gold); color: #fff; }
+.chip.active { background: var(--accent); color: var(--on-accent); }
 .chip-label { display: inline-flex; align-items: center; gap: 6px; height: 100%; }
 .chip-label small { font-size: 11px; opacity: 0.7; }
 .chip-x { margin-left: 6px; margin-right: -6px; width: 22px; height: 22px; border-radius: 50%; font-size: 16px; line-height: 1; }
 .chip-add { color: var(--gold-dark); border: 1px dashed var(--gold); background: transparent; }
-.chip-input { border: 1px solid var(--gold); outline: none; width: 140px; background: var(--card); }
+.chip-input { border: 1px solid var(--gold); outline: none; width: 150px; background: var(--card); font-size: 16px; }
 
 /* List */
 .list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
@@ -103,8 +108,8 @@ h1 { font: 700 38px/1.15 var(--serif); letter-spacing: -1px; margin: 0; }
   flex: none; width: 24px; height: 24px; margin-top: 1px; border-radius: 50%;
   border: 2px solid var(--gold); display: grid; place-items: center;
 }
-.check.checked { background: var(--gold); }
-.check svg { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.check.checked { background: var(--accent); border-color: var(--accent); }
+.check svg { fill: none; stroke: var(--on-accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .todo-body { flex: 1; min-width: 0; }
 .todo-text { display: block; width: 100%; text-align: left; word-break: break-word; }
 .todo.done .todo-text { color: var(--muted); text-decoration: line-through; cursor: default; }
@@ -123,7 +128,7 @@ h1 { font: 700 38px/1.15 var(--serif); letter-spacing: -1px; margin: 0; }
 .prio-high .dot { background: var(--prio-high); }
 .prio-medium .dot { background: var(--prio-medium); }
 .prio-low .dot { background: var(--prio-low); }
-.prio-high, .prio-medium, .prio-low, .due:not(:empty) { color: var(--text); }
+.prio-high, .prio-medium, .prio-low, .due.set { color: var(--text); }
 .due.overdue { color: var(--danger); }
 .cat { background: transparent; border: 1px solid var(--line); }
 .picker { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
@@ -132,6 +137,7 @@ h1 { font: 700 38px/1.15 var(--serif); letter-spacing: -1px; margin: 0; }
   font-size: 13px; padding: 6px 10px; border-radius: 8px;
   border: 1px solid var(--line); background: var(--bg);
 }
+.picker input { font-size: 16px; padding: 3px 8px; }
 .picker .selected { border-color: var(--gold); }
 .picker .danger { color: var(--danger); }
 .remove { width: 32px; height: 32px; margin-top: -4px; opacity: 0.6; }
@@ -154,7 +160,7 @@ footer {
 .addbar input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; height: 40px; font-size: 16px; }
 .add-btn {
   width: 40px; height: 40px; border-radius: 50%; flex: none;
-  background: var(--gold); color: #fff; font-size: 24px; line-height: 1;
+  background: var(--accent); color: var(--on-accent); font-size: 24px; line-height: 1;
 }
 .mic.listening { color: var(--danger); background: rgb(220 80 60 / 0.1); animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 50% { transform: scale(1.1); } }
