@@ -4,6 +4,8 @@ import { CategoryBar } from "./components/CategoryBar";
 import { TodoItem } from "./components/TodoItem";
 import { daysFromToday } from "./dates";
 import { sanitize, type Todo, useTodoStore } from "./store";
+import { useBackClose } from "./useBackClose";
+import { useInstallPrompt } from "./useInstallPrompt";
 
 const PRIORITY_WEIGHT: Record<string, number> = { high: 3, medium: 2, low: 1 };
 
@@ -25,6 +27,8 @@ export function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [undo, setUndo] = useState<{ todo: Todo; index: number } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const install = useInstallPrompt();
+  useBackClose(menuOpen, () => setMenuOpen(false));
 
   // Silinen kategori seçili kaldıysa filtreyi sıfırla
   useEffect(() => {
@@ -91,6 +95,17 @@ export function App() {
             {menuOpen && <div className="backdrop" onClick={() => setMenuOpen(false)} />}
             {menuOpen && (
               <div className="menu" role="menu">
+                {install && (
+                  <button
+                    className="menu-install"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      install();
+                    }}
+                  >
+                    Uygulamayı yükle
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     exportBackup();

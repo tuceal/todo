@@ -15,9 +15,11 @@ export default defineConfig({
         short_name: "Yapılacaklar",
         description: "Telefonunda kalan, hesapsız yapılacaklar listesi.",
         lang: "tr",
+        id: "/",
         start_url: "/",
         scope: "/",
         display: "standalone",
+        orientation: "portrait",
         background_color: "#f5f0e8",
         theme_color: "#f5f0e8",
         icons: [

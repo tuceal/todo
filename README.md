@@ -1,4 +1,4 @@
-# Yapılacaklar ✓ (v2.0.1)
+# Yapılacaklar ✓ (v2.0.2)
 
 **Adres:** https://yapilacaklarim.vercel.app
 
@@ -37,12 +37,13 @@ Ortam değişkeni (env var) **gerekmiyor** — uygulamanın sunucu tarafı yok.
 
 ### Telefona kurulum
 
+- **Android (Chrome):** Adresi aç → uygulamadaki ⋮ menüsü → **Uygulamayı yükle**. (Görünmüyorsa Chrome'un kendi ⋮ menüsü → **Uygulamayı yükle** / **Ana ekrana ekle**.) Yüklenince uygulama çekmecesinde ayrı bir uygulama gibi durur.
 - **iPhone (Safari):** Adresi aç → Paylaş → **Ana Ekrana Ekle**.
-- **Android (Chrome):** Adresi aç → ⋮ → **Uygulamayı yükle** / **Ana ekrana ekle**.
 
 ### Bilmen gerekenler
 
-- **Veri sadece o cihazda ve o tarayıcıda.** iPhone'da Safari sekmesi ile ana ekrana eklenen uygulama **ayrı depolama** kullanır — uygulamayı ana ekrandan kullan.
+- **Veri sadece o cihazda ve o tarayıcıda.** Android'de yüklenen uygulama Chrome ile aynı depolamayı paylaşır; Chrome'da "site verilerini temizle" dersen liste de silinir. (iPhone'da Safari sekmesi ile ana ekran uygulamasının depolaması ayrıdır.)
+- Android geri tuşu açık menüyü / seçiciyi kapatır; hiçbir şey açık değilken uygulamadan çıkar.
 - Ana ekrandaki uygulamayı silersen ya da tarayıcı verilerini temizlersen **liste de silinir**. Arada bir ⋮ → **Yedeği indir** yap.
 - Vercel adresi (domain) değişirse eski adresteki veriler yeni adreste görünmez. Eski adresler (`yapilacaklar-bay`, `yapilacaklar-tuci`) açıldığında uygulama veriyi alıp otomatik olarak yeni adrese taşır; başka bir adres değişikliğinde `src/main.tsx` içindeki listeye eklenmeli.
 - Preview deploy'lar kapalı: sadece `main` dalı yayına çıkar, tek adres vardır.
